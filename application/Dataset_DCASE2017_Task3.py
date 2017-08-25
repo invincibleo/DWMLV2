@@ -62,7 +62,7 @@ class Dataset_DCASE2017_Task3(Dataset):
             event_roll = Dataset_DCASE2017_Task3.audio_event_roll(audio_meta_file_addr,
                                                                   time_resolution=self.FLAGS.time_resolution, label_list=self.label_list)
             for point_idx in range(event_roll.shape[0]):
-                label_name = zip(event_roll[point_idx][self.label_list])
+                label_name = zip(event_roll[point_idx][self.label_list])    #######
                 AudioPoint(
                     data_name=audio_file+'.wav',
                     sub_dir='street',
