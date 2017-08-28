@@ -16,6 +16,7 @@ import tensorflow as tf
 import numpy as np
 import math
 import pickle
+import random
 
 from core.Dataset import Dataset
 from core.GeneralFileAccessor import GeneralFileAccessor
@@ -34,10 +35,7 @@ class Dataset_DCASE2017_Task3(Dataset):
         self.label_list = sorted(['people walking', 'car', 'large vehicle', 'people speaking', 'brakes squeaking', 'children'])
         self.encoding = kwargs.get('encoding', 'khot')
         self.num_classes = len(self.label_list)
-        if self.encoding == 'khot':
-            self.data_list = self.create_khot_data_list()
-        elif self.encoding == 'onehot':
-            self.data_list = self.create_onehot_data_list()
+        self.data_list = self.create_data_list()
 
     @staticmethod
     def audio_event_roll(meta_file, label_list, time_resolution):
@@ -74,75 +72,7 @@ class Dataset_DCASE2017_Task3(Dataset):
 
         return preprocessing_func
 
-    def create_khot_data_list(self):
-        pickle_file = 'tmp/dataset/DCASE2017_khot.pickle'
-        if not tf.gfile.Exists(pickle_file):
-            individual_meta_file_base_addr = os.path.join(self.dataset_dir, 'meta/street/')
-            audio_file_list = [x[:-4] for x in tf.gfile.ListDirectory(individual_meta_file_base_addr)]
-
-            data_list = {'validation': [], 'testing': [], 'training': []}
-            for audio_file in audio_file_list:
-                audio_meta_file_addr = os.path.join(individual_meta_file_base_addr, audio_file + '.ann')
-                audio_file_addr = os.path.join(os.path.join(self.dataset_dir, 'audio/street/'), audio_file + '.wav')
-                audio_raw_all, fs = GeneralFileAccessor(file_path=audio_file_addr,
-                                                        mono=True).read()
-                event_roll = Dataset_DCASE2017_Task3.audio_event_roll(meta_file=audio_meta_file_addr,
-                                                                      time_resolution=self.FLAGS.time_resolution,
-                                                                      label_list=self.label_list)
-
-                feature_file_addr = os.path.join('tmp/feature/DCASE2017/khot/street', audio_file + '.pickle')
-                if not tf.gfile.Exists(feature_file_addr):
-                    feature_base_addr = '/'.join(feature_file_addr.split('/')[:-1])
-                    if not tf.gfile.Exists(feature_base_addr):
-                        os.makedirs(feature_base_addr)
-                    save_features = True
-                    features = []
-                else:
-                    save_features = False
-                    features = pickle.load(open(feature_file_addr, 'rb'))
-
-                for point_idx in range(event_roll.shape[0]):
-                    label_name = ','.join(np.array(self.label_list)[np.array(event_roll[point_idx], dtype=bool)])
-                    start_time = point_idx*self.FLAGS.time_resolution
-                    end_time = (point_idx+1)*self.FLAGS.time_resolution
-                    new_point = AudioPoint(
-                                    data_name=audio_file+'.wav',
-                                    sub_dir='street',
-                                    label_name=label_name,
-                                    label_content=event_roll[point_idx],
-                                    extension='wav',
-                                    fs=fs,
-                                    feature_idx=point_idx,
-                                    start_time=start_time,
-                                    end_time=end_time
-                                )
-
-                    hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(audio_file + str(point_idx))).hexdigest()
-                    percentage_hash = int(hash_name_hashed, 16) % (100 + 1)
-
-                    if percentage_hash < self.FLAGS.validation_percentage:
-                        data_list['validation'].append(new_point)
-                    elif percentage_hash < (self.FLAGS.testing_percentage + self.FLAGS.validation_percentage):
-                        data_list['testing'].append(new_point)
-                    else:
-                        data_list['training'].append(new_point)
-
-                    if save_features:
-                        # feature extraction
-                        audio_raw = audio_raw_all[start_time * fs:end_time * fs]
-                        feature = self.feature_extraction(audio_raw)
-                        features.append(np.reshape(feature, (1, -1)))
-                if save_features:
-                    pickle.dump(features, open(feature_file_addr, 'wb'), 2)
-
-            if not tf.gfile.Exists("tmp/dataset"):
-                os.makedirs("tmp/dataset")
-            pickle.dump(data_list, open(pickle_file, 'wb'), 2)
-        else:
-            data_list = pickle.load(open(pickle_file, 'rb'))
-        return data_list
-
-    def create_onehot_data_list(self):
+    def create_data_list(self):
         pickle_file = 'tmp/dataset/DCASE2017_onehot.pickle'
         if not tf.gfile.Exists(pickle_file):
             individual_meta_file_base_addr = os.path.join(self.dataset_dir, 'meta/street/')
@@ -158,7 +88,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                                                                       time_resolution=self.FLAGS.time_resolution,
                                                                       label_list=self.label_list)
 
-                feature_file_addr = os.path.join('tmp/feature/DCASE2017/onehot/street', audio_file + '.pickle')
+                feature_file_addr = os.path.join('tmp/feature/DCASE2017/street', audio_file + '.pickle')
                 if not tf.gfile.Exists(feature_file_addr):
                     feature_base_addr = '/'.join(feature_file_addr.split('/')[:-1])
                     if not tf.gfile.Exists(feature_base_addr):
@@ -169,30 +99,24 @@ class Dataset_DCASE2017_Task3(Dataset):
                     save_features = False
                     features = pickle.load(open(feature_file_addr, 'rb'))
 
-                for point_idx in range(event_roll.shape[0]):
-                    for idx in range(self.num_classes):
-                        label_content = np.zeros((1, self.num_classes))
-                        if event_roll[point_idx][idx] == 0:
-                            label_name = ''
-                        else:
-                            label_name = self.label_list[idx]
-                            label_content[0, idx] = 1
-
+                if self.encoding == 'khot':
+                    for point_idx in range(event_roll.shape[0]):
+                        label_name = ','.join(np.array(self.label_list)[np.array(event_roll[point_idx], dtype=bool)])
                         start_time = point_idx * self.FLAGS.time_resolution
                         end_time = (point_idx + 1) * self.FLAGS.time_resolution
                         new_point = AudioPoint(
-                                        data_name=audio_file+'.wav',
-                                        sub_dir='street',
-                                        label_name=label_name,
-                                        label_content=label_content,
-                                        extension='wav',
-                                        fs=fs,
-                                        feature_idx=point_idx,
-                                        start_time=start_time,
-                                        end_time=end_time
-                                    )
+                            data_name=audio_file + '.wav',
+                            sub_dir='street',
+                            label_name=label_name,
+                            label_content=event_roll[point_idx],
+                            extension='wav',
+                            fs=fs,
+                            feature_idx=point_idx,
+                            start_time=start_time,
+                            end_time=end_time
+                        )
 
-                        hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(audio_file + str(point_idx) + str(idx))).hexdigest()
+                        hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(audio_file + str(point_idx))).hexdigest()
                         percentage_hash = int(hash_name_hashed, 16) % (100 + 1)
 
                         if percentage_hash < self.FLAGS.validation_percentage:
@@ -202,11 +126,46 @@ class Dataset_DCASE2017_Task3(Dataset):
                         else:
                             data_list['training'].append(new_point)
 
+                elif self.encoding == 'onehot':
+                    for point_idx in range(event_roll.shape[0]):
+                        for idx in range(self.num_classes):
+                            label_content = np.zeros((1, self.num_classes))
+                            if event_roll[point_idx][idx] == 0:
+                                label_name = ''
+                            else:
+                                label_name = self.label_list[idx]
+                                label_content[0, idx] = 1
+
+                            start_time = point_idx * self.FLAGS.time_resolution
+                            end_time = (point_idx + 1) * self.FLAGS.time_resolution
+                            new_point = AudioPoint(
+                                            data_name=audio_file+'.wav',
+                                            sub_dir='street',
+                                            label_name=label_name,
+                                            label_content=label_content,
+                                            extension='wav',
+                                            fs=fs,
+                                            feature_idx=point_idx,
+                                            start_time=start_time,
+                                            end_time=end_time
+                                        )
+
+                            hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(audio_file + str(point_idx) + str(idx))).hexdigest()
+                            percentage_hash = int(hash_name_hashed, 16) % (100 + 1)
+
+                            if percentage_hash < self.FLAGS.validation_percentage:
+                                data_list['validation'].append(new_point)
+                            elif percentage_hash < (self.FLAGS.testing_percentage + self.FLAGS.validation_percentage):
+                                data_list['testing'].append(new_point)
+                            else:
+                                data_list['training'].append(new_point)
+
                     if save_features:
                         # feature extraction
                         audio_raw = audio_raw_all[start_time * fs:end_time * fs]
                         feature = self.feature_extraction(audio_raw)
                         features.append(np.reshape(feature, (1, -1)))
+
                 if save_features:
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
 
@@ -216,3 +175,49 @@ class Dataset_DCASE2017_Task3(Dataset):
         else:
             data_list = pickle.load(open(pickle_file, 'rb'))
         return data_list
+
+    def generate_batch_data(self, category, batch_size=100):
+        i = 0
+        X = []
+        Y = []
+        if category == 'training':
+            working_list = self.data_list['training']
+        elif category == 'validation':
+            working_list = self.data_list['validation']
+        elif category == 'testing':
+            working_list = self.data_list['testing']
+
+        num_data_files = len(working_list)
+        while (1):
+            data_idx = random.randrange(num_data_files)
+            data_name = working_list[data_idx].data_name
+            sub_dir = working_list[data_idx].sub_dir
+            label_content = working_list[data_idx].label_content
+
+
+            bottleneck_path = get_data_file_path(self, label_name, data_name, self.dataset_dir)
+
+            bottleneck = numpy.loadtxt(bottleneck_path, delimiter=',')
+            bottleneck = numpy.reshape(bottleneck, (-1, 2048)) ##########you wen ti 2048
+
+            hot_label = numpy.zeros(self.num_classes, numpy.int8)
+            for idx in label_idx.split(','):
+                hot_label[int(idx)] = 1
+
+            if not len(X) and not len(Y):
+                X = bottleneck
+                Y = numpy.matlib.repmat(hot_label, m=numpy.size(bottleneck, 0), n=1)
+            else:
+                X = numpy.append(X, bottleneck, 0)
+                Y = numpy.append(Y, numpy.matlib.repmat(hot_label, m=numpy.size(bottleneck, 0), n=1), 0)
+
+            if len(X) >= batch_size:
+                X = numpy.reshape(X, (-1, 2048))  #######you wen ti
+                Y = numpy.reshape(Y, (-1, self.num_classes))
+                if len(X) and len(Y):
+                    rand_perm = numpy.random.permutation(batch_size)
+                    yield (X[rand_perm, :], Y[rand_perm, :])
+                i = 0
+                X = []
+                Y = []
+        return 'a'
