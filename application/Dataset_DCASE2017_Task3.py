@@ -64,7 +64,7 @@ class Dataset_DCASE2017_Task3(Dataset):
 
         return event_roll
 
-    def feature_extraction(self, audio_raw, feature_file_addr):
+    def feature_extraction(self, audio_raw):
         # feature extraction
         audio_raw = np.reshape(audio_raw, (1, -1))
         preprocessing = Preprocessing()
@@ -130,7 +130,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                     if save_features:
                         # feature extraction
                         audio_raw = audio_raw_all[start_time * fs:end_time * fs]
-                        feature = self.feature_extraction(audio_raw, feature_file_addr)
+                        feature = self.feature_extraction(audio_raw)
                         features.append(np.reshape(feature, (1, -1)))
                 if save_features:
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
@@ -205,7 +205,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                     if save_features:
                         # feature extraction
                         audio_raw = audio_raw_all[start_time * fs:end_time * fs]
-                        feature = self.feature_extraction(audio_raw, feature_file_addr)
+                        feature = self.feature_extraction(audio_raw)
                         features.append(np.reshape(feature, (1, -1)))
                 if save_features:
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
