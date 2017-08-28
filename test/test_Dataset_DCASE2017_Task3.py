@@ -167,9 +167,17 @@ class MyTestCase(unittest.TestCase):
             The hop of the FFT in sec.\
             """
         )
+        parser.add_argument(
+            '--fs',
+            type=int,
+            default=44100,
+            help="""\
+            The sampling frequency if an time-series signal is given\
+            """
+        )
         FLAGS, unparsed = parser.parse_known_args()
 
-        dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS)
+        dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='onehot', preprocessing_methods=['mel', 'normalization'])
 
 
 if __name__ == '__main__':

@@ -17,3 +17,4 @@ class Dataset(object):
         self.dataset_dir = kwargs.get('dataset_dir', "")
         self.num_classes = int(kwargs.get('num_classes', 0))
         self.FLAGS = kwargs.get('flag', '')
+        self.preprocessing_methods = kwargs.get('preprocessing_methods', [])
