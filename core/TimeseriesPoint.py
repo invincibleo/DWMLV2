@@ -25,6 +25,7 @@ class TimeseriesPoint(Datapoint):
             print('Please input start and end time!')
 
         self.duration = self.end_time - self.start_time
+        self.feature_idx = kwargs.get('feature_idx', None)
 
 
 class AudioPoint(TimeseriesPoint):

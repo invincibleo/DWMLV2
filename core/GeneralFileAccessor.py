@@ -14,22 +14,23 @@ from core.files import *
 
 
 class GeneralFileAccessor(object):
-    def __init__(self, file_path, data=None):
+    def __init__(self, *args, **kwargs):
         self.audio_formats_static = ['wav', 'flac', 'm4a', 'webm']
         self.dict_formats_static = ['json', 'cpickle', 'marshal', 'msgpack']
         self.list_formats_static = ['txt', 'yaml', 'ann']
-        self.extension = file_path.split('.')[-1]
-        self.file_path = file_path
-        self.data = data
+        self.file_path = kwargs.get('file_path', '')
+        self.extension = self.file_path.split('.')[-1]
+        self.data = kwargs.get('data', None)
+        self.kwargs = kwargs
 
 
     def read(self):
         if self.extension in self.audio_formats_static:
-            return AudioFile().load(self.file_path)
+            return AudioFile(**self.kwargs).load(self.file_path)
         elif self.extension in self.dict_formats_static:
-            return DictFile().load(self.file_path)
+            return DictFile(**self.kwargs).load(self.file_path)
         elif self.extension in self.list_formats_static:
-            return ListFile().load(self.file_path)
+            return ListFile(**self.kwargs).load(self.file_path)
         else:
             print('Format does not support!')
 
