@@ -186,7 +186,6 @@ class Dataset_DCASE2017_Task3(Dataset):
     def generate_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
         X = []
         Y = []
-        i = 0
         if category == 'training':
             working_list = self.data_list['training']
         elif category == 'validation':
@@ -219,18 +218,15 @@ class Dataset_DCASE2017_Task3(Dataset):
                 X = np.append(X, np.expand_dims(feature, axis=0), 0)
                 Y = np.append(Y, label_content, 0)
 
-            i = i + 1
 
-            if i >= batch_size:
+            if X.shape[0] >= batch_size:
                 yield (X, Y)
                 X = []
                 Y = []
-                i = 0
 
     def get_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
         X = []
         Y = []
-        i = 0
         if category == 'training':
             working_list = self.data_list['training']
         elif category == 'validation':
@@ -263,10 +259,8 @@ class Dataset_DCASE2017_Task3(Dataset):
                 X = np.append(X, np.expand_dims(feature, axis=0), 0)
                 Y = np.append(Y, label_content, 0)
 
-            i = i + 1
 
-            if i >= batch_size:
+            if X.shape[0] >= batch_size:
                 return (X, Y)
                 X = []
                 Y = []
-                i = 0
