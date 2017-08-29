@@ -41,6 +41,7 @@ import sys
 import re
 import os
 import keras
+import shutil
 
 from keras.models import Sequential
 from keras.models import model_from_json
@@ -52,7 +53,6 @@ from core.Metrics import *
 from keras.engine.topology import get_source_inputs
 from keras.utils.data_utils import get_file
 import warnings
-
 
 WEIGHTS_PATH = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.5/inception_v3_weights_tf_dim_ordering_tf_kernels.h5'
 WEIGHTS_PATH_NO_TOP = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.5/inception_v3_weights_tf_dim_ordering_tf_kernels_notop.h5'
@@ -409,23 +409,28 @@ class LearnerInceptionV3(Learner):
             # model = Sequential()
             # model.add(Dense(43, input_dim=96*20, activation='sigmoid'))#InceptionV3(weights=None, classes=527)
             num_classes = self.dataset.num_classes
-            model = InceptionV3(input_shape=(101, 40, 1), weights=None, classes=num_classes)
+            time_length = int(self.FLAGS.time_resolution/0.01) + 1
+            input_shape = (time_length, 40, 1)
+            model = InceptionV3(input_shape=input_shape, weights=None, classes=num_classes)
 
             # Compile model
             model.compile(loss='categorical_crossentropy',
                           optimizer=keras.optimizers.Adam(lr=0.007, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.01),
                           metrics=['categorical_accuracy', top3_accuracy, 'top_k_categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
 
+            if tf.gfile.Exists('tmp/logs/tensorboard' + 'InceptionV3'):
+                shutil.rmtree('tmp/logs/tensorboard' + 'InceptionV3')
+
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard' + 'InceptionV3',
                 histogram_freq=10, write_graph=True, write_images=True)
 
             hist = model.fit_generator(
-                self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=(101, 40, 1)),
+                self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=1,
-                epochs=1500,  # 1000000
+                epochs=150,  # 1000000
                 validation_data=self.dataset.generate_batch_data(category='validation',
-                                                                       batch_size=self.FLAGS.validation_batch_size, input_shape=(101, 40, 1)),
+                                                                       batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
                 validation_steps=1,
                 verbose=2,
                 callbacks=[tensorboard]
@@ -478,4 +483,6 @@ class LearnerInceptionV3(Learner):
 
         (X, Y) = self.dataset.get_batch_data(category='testing', batch_size=10)
         predictions = model.predict(X, batch_size=10)
-        print(predictions)
+
+        return Y, predictions
+

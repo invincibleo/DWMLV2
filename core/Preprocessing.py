@@ -13,6 +13,8 @@ from __future__ import print_function
 import librosa
 import scipy
 import numpy
+import math
+from core.GeneralFileAccessor import GeneralFileAccessor
 
 
 class Preprocessing(object):
@@ -288,3 +290,41 @@ class Preprocessing(object):
         data_mean = numpy.mean(data, axis=1, keepdims=True)
         data_std = numpy.std(data, axis=1, keepdims=True)
         return (data - data_mean) / data_std
+
+
+    @staticmethod
+    def audio_event_roll(meta_file, label_list, time_resolution):
+        meta_file_content = GeneralFileAccessor(file_path=meta_file).read()
+        end_times = numpy.array([float(x[1]) for x in meta_file_content])
+        max_offset_value = numpy.max(end_times, 0)
+
+        event_roll = numpy.zeros((int(math.floor(max_offset_value / time_resolution)), len(label_list)))
+        start_times = []
+        end_times = []
+
+        for line in meta_file_content:
+            label_name = line[-1]
+            label_idx = label_list.index(label_name)
+            event_start = float(line[0])
+            event_end = float(line[1])
+
+            onset = int(math.floor(event_start / time_resolution))
+            offset = int(math.floor(event_end / time_resolution))
+
+            event_roll[onset:offset, label_idx] = 1
+            start_times.append(event_start)
+            end_times.append(event_end)
+
+        return event_roll
+
+    @staticmethod
+    def feature_extraction(dataset, audio_raw):
+        # feature extraction
+        audio_raw = numpy.reshape(audio_raw, (1, -1))
+        preprocessing = Preprocessing()
+        preprocessing_func = audio_raw
+        for preprocessing_method in dataset.preprocessing_methods:
+            preprocessing_func = eval('preprocessing.' + preprocessing_method)(preprocessing_func)
+
+        return preprocessing_func
+

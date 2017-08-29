@@ -38,43 +38,8 @@ class Dataset_DCASE2017_Task3(Dataset):
         self.num_classes = len(self.label_list)
         self.data_list = self.create_data_list()
 
-    @staticmethod
-    def audio_event_roll(meta_file, label_list, time_resolution):
-        meta_file_content = GeneralFileAccessor(file_path=meta_file).read()
-        end_times = np.array([float(x[1]) for x in meta_file_content])
-        max_offset_value = np.max(end_times, 0)
-
-        event_roll = np.zeros((int(math.floor(max_offset_value / time_resolution)), len(label_list)))
-        start_times = []
-        end_times = []
-
-        for line in meta_file_content:
-            label_name = line[-1]
-            label_idx = label_list.index(label_name)
-            event_start = float(line[0])
-            event_end = float(line[1])
-
-            onset = int(math.floor(event_start / time_resolution))
-            offset = int(math.floor(event_end / time_resolution))
-
-            event_roll[onset:offset, label_idx] = 1
-            start_times.append(event_start)
-            end_times.append(event_end)
-
-        return event_roll
-
-    def feature_extraction(self, audio_raw):
-        # feature extraction
-        audio_raw = np.reshape(audio_raw, (1, -1))
-        preprocessing = Preprocessing()
-        preprocessing_func = audio_raw
-        for preprocessing_method in self.preprocessing_methods:
-            preprocessing_func = eval('preprocessing.' + preprocessing_method)(preprocessing_func)
-
-        return preprocessing_func
-
     def create_data_list(self):
-        pickle_file = 'tmp/dataset/DCASE2017_onehot.pickle'
+        pickle_file = 'tmp/dataset/DCASE2017_onehot' + 'time_res' + str(self.FLAGS.time_resolution) + '.pickle'
         if not tf.gfile.Exists(pickle_file) or not tf.gfile.Exists(FEATURE_DIR_ADDR):
             individual_meta_file_base_addr = os.path.join(self.dataset_dir, 'meta/street/')
             audio_file_list = [x[:-4] for x in tf.gfile.ListDirectory(individual_meta_file_base_addr)]
@@ -85,11 +50,12 @@ class Dataset_DCASE2017_Task3(Dataset):
                 audio_file_addr = os.path.join(os.path.join(self.dataset_dir, 'audio/street/'), audio_file + '.wav')
                 audio_raw_all, fs = GeneralFileAccessor(file_path=audio_file_addr,
                                                         mono=True).read()
-                event_roll = Dataset_DCASE2017_Task3.audio_event_roll(meta_file=audio_meta_file_addr,
-                                                                      time_resolution=self.FLAGS.time_resolution,
-                                                                      label_list=self.label_list)
+                event_roll = Preprocessing.audio_event_roll(meta_file=audio_meta_file_addr,
+                                                            time_resolution=self.FLAGS.time_resolution,
+                                                            label_list=self.label_list)
 
-                feature_file_addr = os.path.join(FEATURE_DIR_ADDR, 'street', audio_file + '.pickle')
+                feature_file_addr = os.path.join(FEATURE_DIR_ADDR, 'time_res' + str(self.FLAGS.time_resolution),
+                                                 'street', audio_file + '.pickle')
                 if not tf.gfile.Exists(feature_file_addr):
                     feature_base_addr = '/'.join(feature_file_addr.split('/')[:-1])
                     if not tf.gfile.Exists(feature_base_addr):
@@ -129,8 +95,8 @@ class Dataset_DCASE2017_Task3(Dataset):
 
                         if save_features:
                             # feature extraction
-                            audio_raw = audio_raw_all[start_time * fs:end_time * fs]
-                            feature = self.feature_extraction(audio_raw)
+                            audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.floor(end_time * fs))]
+                            feature = Preprocessing.feature_extraction(dataset=self, audio_raw=audio_raw)
                             features.append(np.reshape(feature, (1, -1)))
 
                 elif self.encoding == 'onehot':
@@ -169,8 +135,8 @@ class Dataset_DCASE2017_Task3(Dataset):
 
                         if save_features:
                             # feature extraction
-                            audio_raw = audio_raw_all[start_time * fs:end_time * fs]
-                            feature = self.feature_extraction(audio_raw)
+                            audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.floor(end_time * fs))]
+                            feature = Preprocessing.feature_extraction(dataset=self, audio_raw=audio_raw)
                             features.append(np.reshape(feature, (1, -1)))
 
                 if save_features:
@@ -200,12 +166,10 @@ class Dataset_DCASE2017_Task3(Dataset):
             data_name = data_point.data_name
             sub_dir = data_point.sub_dir
             label_content = data_point.label_content
-            # feature_name = self.preprocessing_methods[0]
-            # start_time = data_point.start_time
-            # end_time = data_point.end_time
             feature_idx = data_point.feature_idx
 
-            feature_file_addr = os.path.join(FEATURE_DIR_ADDR, sub_dir, data_name.split('.')[0] + '.pickle')
+            feature_file_addr = os.path.join(FEATURE_DIR_ADDR, 'time_res' + str(self.FLAGS.time_resolution),
+                                             sub_dir, data_name.split('.')[0] + '.pickle')
             features = pickle.load(open(feature_file_addr, 'rb'))
 
             feature = features[feature_idx]
@@ -217,7 +181,6 @@ class Dataset_DCASE2017_Task3(Dataset):
             else:
                 X = np.append(X, np.expand_dims(feature, axis=0), 0)
                 Y = np.append(Y, label_content, 0)
-
 
             if X.shape[0] >= batch_size:
                 yield (X, Y)
@@ -241,12 +204,10 @@ class Dataset_DCASE2017_Task3(Dataset):
             data_name = data_point.data_name
             sub_dir = data_point.sub_dir
             label_content = data_point.label_content
-            # feature_name = self.preprocessing_methods[0]
-            # start_time = data_point.start_time
-            # end_time = data_point.end_time
             feature_idx = data_point.feature_idx
 
-            feature_file_addr = os.path.join(FEATURE_DIR_ADDR, sub_dir, data_name.split('.')[0] + '.pickle')
+            feature_file_addr = os.path.join(FEATURE_DIR_ADDR, 'time_res' + str(self.FLAGS.time_resolution),
+                                             sub_dir, data_name.split('.')[0] + '.pickle')
             features = pickle.load(open(feature_file_addr, 'rb'))
 
             feature = features[feature_idx]
@@ -259,8 +220,5 @@ class Dataset_DCASE2017_Task3(Dataset):
                 X = np.append(X, np.expand_dims(feature, axis=0), 0)
                 Y = np.append(Y, label_content, 0)
 
-
             if X.shape[0] >= batch_size:
                 return (X, Y)
-                X = []
-                Y = []
