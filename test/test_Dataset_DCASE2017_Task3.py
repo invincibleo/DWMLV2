@@ -178,6 +178,7 @@ class MyTestCase(unittest.TestCase):
         FLAGS, unparsed = parser.parse_known_args()
 
         dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel', 'normalization'])
+        dataset.generate_batch_data('training', 10)
 
 
 if __name__ == '__main__':

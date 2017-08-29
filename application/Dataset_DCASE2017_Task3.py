@@ -22,9 +22,10 @@ from core.Dataset import Dataset
 from core.GeneralFileAccessor import GeneralFileAccessor
 from core.TimeseriesPoint import *
 from core.Preprocessing import *
+from core.util import *
 
 PICKLE_FILE_ADDR = './tmp/dataset_DCASE2017task3.pickle'
-
+FEATURE_DIR_ADDR = 'tmp/feature/DCASE2017'
 
 
 class Dataset_DCASE2017_Task3(Dataset):
@@ -74,7 +75,7 @@ class Dataset_DCASE2017_Task3(Dataset):
 
     def create_data_list(self):
         pickle_file = 'tmp/dataset/DCASE2017_onehot.pickle'
-        if not tf.gfile.Exists(pickle_file):
+        if not tf.gfile.Exists(pickle_file) or not tf.gfile.Exists(FEATURE_DIR_ADDR):
             individual_meta_file_base_addr = os.path.join(self.dataset_dir, 'meta/street/')
             audio_file_list = [x[:-4] for x in tf.gfile.ListDirectory(individual_meta_file_base_addr)]
 
@@ -88,7 +89,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                                                                       time_resolution=self.FLAGS.time_resolution,
                                                                       label_list=self.label_list)
 
-                feature_file_addr = os.path.join('tmp/feature/DCASE2017/street', audio_file + '.pickle')
+                feature_file_addr = os.path.join(FEATURE_DIR_ADDR, 'street', audio_file + '.pickle')
                 if not tf.gfile.Exists(feature_file_addr):
                     feature_base_addr = '/'.join(feature_file_addr.split('/')[:-1])
                     if not tf.gfile.Exists(feature_base_addr):
@@ -108,7 +109,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                             data_name=audio_file + '.wav',
                             sub_dir='street',
                             label_name=label_name,
-                            label_content=event_roll[point_idx],
+                            label_content=np.reshape(event_roll[point_idx], (1, -1)),
                             extension='wav',
                             fs=fs,
                             feature_idx=point_idx,
@@ -126,6 +127,12 @@ class Dataset_DCASE2017_Task3(Dataset):
                         else:
                             data_list['training'].append(new_point)
 
+                        if save_features:
+                            # feature extraction
+                            audio_raw = audio_raw_all[start_time * fs:end_time * fs]
+                            feature = self.feature_extraction(audio_raw)
+                            features.append(np.reshape(feature, (1, -1)))
+
                 elif self.encoding == 'onehot':
                     for point_idx in range(event_roll.shape[0]):
                         for idx in range(self.num_classes):
@@ -142,7 +149,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                                             data_name=audio_file+'.wav',
                                             sub_dir='street',
                                             label_name=label_name,
-                                            label_content=label_content,
+                                            label_content=np.reshape(label_content, (1, -1)),
                                             extension='wav',
                                             fs=fs,
                                             feature_idx=point_idx,
@@ -160,11 +167,11 @@ class Dataset_DCASE2017_Task3(Dataset):
                             else:
                                 data_list['training'].append(new_point)
 
-                    if save_features:
-                        # feature extraction
-                        audio_raw = audio_raw_all[start_time * fs:end_time * fs]
-                        feature = self.feature_extraction(audio_raw)
-                        features.append(np.reshape(feature, (1, -1)))
+                        if save_features:
+                            # feature extraction
+                            audio_raw = audio_raw_all[start_time * fs:end_time * fs]
+                            feature = self.feature_extraction(audio_raw)
+                            features.append(np.reshape(feature, (1, -1)))
 
                 if save_features:
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
@@ -177,7 +184,6 @@ class Dataset_DCASE2017_Task3(Dataset):
         return data_list
 
     def generate_batch_data(self, category, batch_size=100):
-        i = 0
         X = []
         Y = []
         if category == 'training':
@@ -190,34 +196,67 @@ class Dataset_DCASE2017_Task3(Dataset):
         num_data_files = len(working_list)
         while (1):
             data_idx = random.randrange(num_data_files)
-            data_name = working_list[data_idx].data_name
-            sub_dir = working_list[data_idx].sub_dir
-            label_content = working_list[data_idx].label_content
+            data_point = working_list[data_idx]
+            data_name = data_point.data_name
+            sub_dir = data_point.sub_dir
+            label_content = data_point.label_content
+            # feature_name = self.preprocessing_methods[0]
+            # start_time = data_point.start_time
+            # end_time = data_point.end_time
+            feature_idx = data_point.feature_idx
 
+            feature_file_addr = os.path.join(FEATURE_DIR_ADDR, sub_dir, data_name.split('.')[0] + '.pickle')
+            features = pickle.load(open(feature_file_addr, 'rb'))
 
-            bottleneck_path = get_data_file_path(self, label_name, data_name, self.dataset_dir)
-
-            bottleneck = numpy.loadtxt(bottleneck_path, delimiter=',')
-            bottleneck = numpy.reshape(bottleneck, (-1, 2048)) ##########you wen ti 2048
-
-            hot_label = numpy.zeros(self.num_classes, numpy.int8)
-            for idx in label_idx.split(','):
-                hot_label[int(idx)] = 1
+            feature = features[feature_idx]
 
             if not len(X) and not len(Y):
-                X = bottleneck
-                Y = numpy.matlib.repmat(hot_label, m=numpy.size(bottleneck, 0), n=1)
+                X = numpy.array(feature)
+                Y = numpy.array(label_content)
             else:
-                X = numpy.append(X, bottleneck, 0)
-                Y = numpy.append(Y, numpy.matlib.repmat(hot_label, m=numpy.size(bottleneck, 0), n=1), 0)
+                X = numpy.append(X, feature, 0)
+                Y = numpy.append(Y, label_content, 0)
 
             if len(X) >= batch_size:
-                X = numpy.reshape(X, (-1, 2048))  #######you wen ti
-                Y = numpy.reshape(Y, (-1, self.num_classes))
-                if len(X) and len(Y):
-                    rand_perm = numpy.random.permutation(batch_size)
-                    yield (X[rand_perm, :], Y[rand_perm, :])
-                i = 0
+                yield (X, Y)
                 X = []
                 Y = []
-        return 'a'
+
+    def get_batch_data(self, category, batch_size=100):
+        X = []
+        Y = []
+        if category == 'training':
+            working_list = self.data_list['training']
+        elif category == 'validation':
+            working_list = self.data_list['validation']
+        elif category == 'testing':
+            working_list = self.data_list['testing']
+
+        num_data_files = len(working_list)
+        while (1):
+            data_idx = random.randrange(num_data_files)
+            data_point = working_list[data_idx]
+            data_name = data_point.data_name
+            sub_dir = data_point.sub_dir
+            label_content = data_point.label_content
+            # feature_name = self.preprocessing_methods[0]
+            # start_time = data_point.start_time
+            # end_time = data_point.end_time
+            feature_idx = data_point.feature_idx
+
+            feature_file_addr = os.path.join(FEATURE_DIR_ADDR, sub_dir, data_name.split('.')[0] + '.pickle')
+            features = pickle.load(open(feature_file_addr, 'rb'))
+
+            feature = features[feature_idx]
+
+            if not len(X) and not len(Y):
+                X = numpy.array(feature)
+                Y = numpy.array(label_content)
+            else:
+                X = numpy.append(X, feature, 0)
+                Y = numpy.append(Y, label_content, 0)
+
+            if len(X) >= batch_size:
+                return (X, Y)
+                X = []
+                Y = []
