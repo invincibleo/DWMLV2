@@ -183,9 +183,10 @@ class Dataset_DCASE2017_Task3(Dataset):
             data_list = pickle.load(open(pickle_file, 'rb'))
         return data_list
 
-    def generate_batch_data(self, category, batch_size=100):
+    def generate_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
         X = []
         Y = []
+        i = 0
         if category == 'training':
             working_list = self.data_list['training']
         elif category == 'validation':
@@ -209,22 +210,27 @@ class Dataset_DCASE2017_Task3(Dataset):
             features = pickle.load(open(feature_file_addr, 'rb'))
 
             feature = features[feature_idx]
+            feature = np.reshape(feature, input_shape)
 
             if not len(X) and not len(Y):
-                X = numpy.array(feature)
-                Y = numpy.array(label_content)
+                X = np.expand_dims(feature, axis=0)
+                Y = label_content
             else:
-                X = numpy.append(X, feature, 0)
-                Y = numpy.append(Y, label_content, 0)
+                X = np.append(X, np.expand_dims(feature, axis=0), 0)
+                Y = np.append(Y, label_content, 0)
 
-            if len(X) >= batch_size:
+            i = i + 1
+
+            if i >= batch_size:
                 yield (X, Y)
                 X = []
                 Y = []
+                i = 0
 
-    def get_batch_data(self, category, batch_size=100):
+    def get_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
         X = []
         Y = []
+        i = 0
         if category == 'training':
             working_list = self.data_list['training']
         elif category == 'validation':
@@ -248,15 +254,19 @@ class Dataset_DCASE2017_Task3(Dataset):
             features = pickle.load(open(feature_file_addr, 'rb'))
 
             feature = features[feature_idx]
+            feature = np.reshape(feature, input_shape)
 
             if not len(X) and not len(Y):
-                X = numpy.array(feature)
-                Y = numpy.array(label_content)
+                X = np.expand_dims(feature, axis=0)
+                Y = label_content
             else:
-                X = numpy.append(X, feature, 0)
-                Y = numpy.append(Y, label_content, 0)
+                X = np.append(X, np.expand_dims(feature, axis=0), 0)
+                Y = np.append(Y, label_content, 0)
 
-            if len(X) >= batch_size:
+            i = i + 1
+
+            if i >= batch_size:
                 return (X, Y)
                 X = []
                 Y = []
+                i = 0
