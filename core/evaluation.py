@@ -376,7 +376,7 @@ class DCASE2016_EventDetection_SegmentBasedMetrics(EventDetectionMetrics):
         # Convert event list into frame-based representation
         # system_event_roll = self.list_to_roll(data=system_output, time_resolution=self.time_resolution)
         # annotated_event_roll = self.list_to_roll(data=annotated_ground_truth, time_resolution=self.time_resolution)
-        system_event_roll = system_output
+        system_event_roll = numpy.round(system_output)
         annotated_event_roll = annotated_ground_truth
 
         # Fix durations of both event_rolls to be equal

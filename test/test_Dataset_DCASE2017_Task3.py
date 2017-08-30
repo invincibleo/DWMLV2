@@ -1,5 +1,6 @@
 import unittest
 import argparse
+from hyperopt import fmin, tpe, hp
 
 
 from application.Dataset_DCASE2017_Task3 import *
@@ -178,18 +179,56 @@ class MyTestCase(unittest.TestCase):
             The sampling frequency if an time-series signal is given\
             """
         )
+        parser.add_argument(
+            '--num_second_last_layer',
+            type=int,
+            default=512,
+            help="""\
+            \
+            """
+        )
+        parser.add_argument(
+            '--drop_out_rate',
+            type=float,
+            default=0.5,
+            help="""\
+            \
+            """
+        )
         FLAGS, unparsed = parser.parse_known_args()
 
-        dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel', 'normalization'])
-        learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
-        evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
+        # define an objective function
+        def objective(args):
+            FLAGS.learning_rate = args['lr']
+            FLAGS.num_second_last_layer = args['num_second_last_layer']
+            FLAGS.drop_out_rate = args['drop_out_rate']
+            FLAGS.train_batch_size = args['batch_size']
 
-        # dataset.get_batch_data('training', 10, (-1, 40, 1))
+            dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel', 'normalization'])
+            learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
+            evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
 
-        learner.learn()
-        truth, prediction = learner.predict()
-        evaluator.evaluate(truth, prediction)
-        results = evaluator.results()
+            # dataset.get_batch_data('training', 10, (-1, 40, 1))
+
+            learner.learn()
+            truth, prediction = learner.predict()
+            evaluator.evaluate(truth, prediction)
+            results = evaluator.results()
+            print('F:' + str(results['class_wise_average']['F']) + '\n')
+            print('ER' + str(results['class_wise_average']['ER']) + '\n')
+
+            return {'F score': results['class_wise_average']['F'], 'Error Rate': results['class_wise_average']['ER']}
+
+        # define a search space
+        space = {'lr': hp.choice('lr', [0.001, 0.01, 0.1, 0.5, 1, 10]),
+                 'num_second_last_layer': hp.choice('num_second_last_layer', [64, 128, 256, 512, 1024]),
+                 'drop_out_rate': hp.choice('drop_out_rate', [0.1, 0.3, 0.5, 0.7, 0.9]),
+                 'batch_size': hp.choice('batch_size', [50, 100, 200, 500, 800, 1000])}
+
+        # minimize the objective over the space
+        best = fmin(objective, space, algo=tpe.suggest, max_evals=100)
+
+        print best
 
 
 if __name__ == '__main__':
