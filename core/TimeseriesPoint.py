@@ -19,8 +19,8 @@ class TimeseriesPoint(Datapoint):
     def __init__(self, *args, **kwargs):
         super(TimeseriesPoint, self).__init__(self, *args, **kwargs)
         try:
-            self.start_time = int(kwargs.get('start_time'))
-            self.end_time = int(kwargs.get('end_time'))
+            self.start_time = float(kwargs.get('start_time'))
+            self.end_time = float(kwargs.get('end_time'))
         except TypeError:
             print('Please input start and end time!')
 

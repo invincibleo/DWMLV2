@@ -1,13 +1,12 @@
 import unittest
 import argparse
-import datetime
 from hyperopt import fmin, tpe, hp
 
 
 from application.Dataset_DCASE2017_Task3 import *
 from application.LearnerInceptionV3 import LearnerInceptionV3
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
-
+import datetime
 
 DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/SoundEventRecognition/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development"
 class MyTestCase(unittest.TestCase):
@@ -101,45 +100,27 @@ class MyTestCase(unittest.TestCase):
         )
         FLAGS, unparsed = parser.parse_known_args()
 
-        # define an objective function
-        def objective(args):
-            FLAGS.learning_rate = args['lr']
-            FLAGS.num_second_last_layer = args['num_second_last_layer']
-            FLAGS.drop_out_rate = args['drop_out_rate']
-            FLAGS.train_batch_size = args['batch_size']
 
-            dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel'])
-            learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
-            evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
+        dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel'])
+        learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
+        evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
 
-            # dataset.get_batch_data('training', 10, (-1, 40, 1))
+        # dataset.get_batch_data('training', 10, (-1, 40, 1))
 
-            learner.learn()
-            truth, prediction = learner.predict()
-            evaluator.evaluate(truth, prediction)
-            results = evaluator.results()
+        learner.learn()
+        truth, prediction = learner.predict()
+        evaluator.evaluate(truth, prediction)
+        results = evaluator.results()
+        print('F:' + str(results['class_wise_average']['F']) + '\n')
+        print('ER' + str(results['class_wise_average']['ER']) + '\n')
 
-            results_dir_addr = 'tmp/results/'
-            current_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-            if not tf.gfile.Exists(results_dir_addr):
-                tf.gfile.MakeDirs(results_dir_addr)
-                pickle.dump(results, open(results_dir_addr + 'results_' + current_time_str + '.pickle', 'wb'), 2)
-                with open(results_dir_addr + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
-                    f.write(str(FLAGS))
-
-            return {'F score': results['class_wise_average']['F'], 'Error Rate': results['class_wise_average']['ER']}
-
-        # define a search space
-        space = {'lr': hp.choice('lr', [0.0001, 0.001, 0.01, 0.1, 0.5, 1, 10]),
-                 'num_second_last_layer': hp.choice('num_second_last_layer', [16, 64, 128, 256, 512, 1024]),
-                 'drop_out_rate': hp.choice('drop_out_rate', [0.1, 0.3, 0.5, 0.7, 0.9]),
-                 'batch_size': hp.choice('batch_size', [50, 100, 200, 500, 800, 1000])}
-
-        # minimize the objective over the space
-        best = fmin(objective, space, algo=tpe.suggest, max_evals=100)
-
-        print best
-
+        results_dir_addr = 'tmp/results/'
+        current_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        if not tf.gfile.Exists(results_dir_addr):
+            tf.gfile.MakeDirs(results_dir_addr)
+            pickle.dump(results, open(results_dir_addr + 'results_' + current_time_str + '.pickle', 'wb'), 2)
+            with open(results_dir_addr + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
+                f.write(str(FLAGS))
 
 if __name__ == '__main__':
     unittest.main()

@@ -140,6 +140,9 @@ class Dataset_DCASE2017_Task3(Dataset):
                             features.append(np.reshape(feature, (1, -1)))
 
                 if save_features:
+                    features_mean = np.mean(features, axis=0, keepdims=True)
+                    features_std = np.std(features, axis=0, keepdims=True)
+                    features = (features - features_mean)/features_std
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
 
             if not tf.gfile.Exists("tmp/dataset"):
@@ -160,32 +163,34 @@ class Dataset_DCASE2017_Task3(Dataset):
             working_list = self.data_list['testing']
 
         num_data_files = len(working_list)
+        random_perm = np.random.permutation(num_data_files)
         while (1):
-            data_idx = random.randrange(num_data_files)
-            data_point = working_list[data_idx]
-            data_name = data_point.data_name
-            sub_dir = data_point.sub_dir
-            label_content = data_point.label_content
-            feature_idx = data_point.feature_idx
+            for i in range(0, num_data_files):
+                data_idx = random_perm[i]           #random.randrange(num_data_files)
+                data_point = working_list[data_idx]
+                data_name = data_point.data_name
+                sub_dir = data_point.sub_dir
+                label_content = data_point.label_content
+                feature_idx = data_point.feature_idx
 
-            feature_file_addr = os.path.join(FEATURE_DIR_ADDR, 'time_res' + str(self.FLAGS.time_resolution),
-                                             sub_dir, data_name.split('.')[0] + '.pickle')
-            features = pickle.load(open(feature_file_addr, 'rb'))
+                feature_file_addr = os.path.join(FEATURE_DIR_ADDR, 'time_res' + str(self.FLAGS.time_resolution),
+                                                 sub_dir, data_name.split('.')[0] + '.pickle')
+                features = pickle.load(open(feature_file_addr, 'rb'))
 
-            feature = features[feature_idx]
-            feature = np.reshape(feature, input_shape)
+                feature = features[feature_idx]
+                feature = np.reshape(feature, input_shape)
 
-            if not len(X) and not len(Y):
-                X = np.expand_dims(feature, axis=0)
-                Y = label_content
-            else:
-                X = np.append(X, np.expand_dims(feature, axis=0), 0)
-                Y = np.append(Y, label_content, 0)
+                if not len(X) and not len(Y):
+                    X = np.expand_dims(feature, axis=0)
+                    Y = label_content #np.expand_dims(label_content, axis=0)
+                else:
+                    X = np.append(X, np.expand_dims(feature, axis=0), 0)
+                    Y = np.append(Y, label_content, 0)          #np.expand_dims(label_content, axis=0)
 
-            if X.shape[0] >= batch_size:
-                yield (X, Y)
-                X = []
-                Y = []
+                if X.shape[0] >= batch_size:
+                    yield (X, Y)
+                    X = []
+                    Y = []
 
     def get_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
         X = []
@@ -198,27 +203,31 @@ class Dataset_DCASE2017_Task3(Dataset):
             working_list = self.data_list['testing']
 
         num_data_files = len(working_list)
+        data_point_list = []
+        random_perm = np.random.permutation(num_data_files)
         while (1):
-            data_idx = random.randrange(num_data_files)
-            data_point = working_list[data_idx]
-            data_name = data_point.data_name
-            sub_dir = data_point.sub_dir
-            label_content = data_point.label_content
-            feature_idx = data_point.feature_idx
+            for i in range(0, num_data_files):
+                data_idx = random_perm[i]
+                data_point = working_list[data_idx]
+                data_point_list.append(data_point)
+                data_name = data_point.data_name
+                sub_dir = data_point.sub_dir
+                label_content = data_point.label_content
+                feature_idx = data_point.feature_idx
 
-            feature_file_addr = os.path.join(FEATURE_DIR_ADDR, 'time_res' + str(self.FLAGS.time_resolution),
-                                             sub_dir, data_name.split('.')[0] + '.pickle')
-            features = pickle.load(open(feature_file_addr, 'rb'))
+                feature_file_addr = os.path.join(FEATURE_DIR_ADDR, 'time_res' + str(self.FLAGS.time_resolution),
+                                                 sub_dir, data_name.split('.')[0] + '.pickle')
+                features = pickle.load(open(feature_file_addr, 'rb'))
 
-            feature = features[feature_idx]
-            feature = np.reshape(feature, input_shape)
+                feature = features[feature_idx]
+                feature = np.reshape(feature, input_shape)
 
-            if not len(X) and not len(Y):
-                X = np.expand_dims(feature, axis=0)
-                Y = label_content
-            else:
-                X = np.append(X, np.expand_dims(feature, axis=0), 0)
-                Y = np.append(Y, label_content, 0)
+                if not len(X) and not len(Y):
+                    X = np.expand_dims(feature, axis=0)
+                    Y = label_content #np.expand_dims(label_content, axis=0)
+                else:
+                    X = np.append(X, np.expand_dims(feature, axis=0), 0)
+                    Y = np.append(Y, label_content, 0)
 
-            if X.shape[0] >= batch_size:
-                return (X, Y)
+                if X.shape[0] >= batch_size:
+                    return (X, Y, data_point_list)

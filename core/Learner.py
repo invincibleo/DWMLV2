@@ -21,6 +21,7 @@ class Learner(object):
         self.learner_name = kwargs.get('learner_name', '')
         self.dataset = kwargs.get('dataset', None)
         self.FLAGS = kwargs.get('flag', None)
+        self.hash_name_hashed = ''
 
     @abstractmethod
     def learn(self):

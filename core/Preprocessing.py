@@ -23,8 +23,8 @@ class Preprocessing(object):
         self.parameters = {
             'general': {
                 'fs': 44100,
-                'win_length_samples': int(0.025 * 44100),
-                'hop_length_samples': int(0.01 * 44100),
+                'win_length_samples': int(0.04 * 44100),
+                'hop_length_samples': int(0.02 * 44100),
             },
             'mfcc': {
                 'mono': True,  # [True, False]

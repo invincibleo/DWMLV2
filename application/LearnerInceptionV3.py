@@ -363,7 +363,9 @@ def InceptionV3(include_top=True,
                   kernel_initializer=keras.initializers.he_uniform(),
                   bias_initializer=keras.initializers.zeros(), name='2ndLastPrediction')(x)   #####change softmax to sigmoid
         x = Dropout(rate=drop_out_rate)(x)   ####### added by me
-        x = Dense(classes, activation='sigmoid', name='predictions')(x)   #####change softmax to sigmoid
+        x = Dense(classes, activation='sigmoid', use_bias=True,
+                  kernel_initializer=keras.initializers.he_uniform(),
+                  bias_initializer=keras.initializers.zeros(), name='predictions')(x)   #####change softmax to sigmoid
 
     else:
         if pooling == 'avg':
@@ -409,16 +411,17 @@ def InceptionV3(include_top=True,
 
 class LearnerInceptionV3(Learner):
     def learn(self):
-        hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(self.FLAGS.__str__())).hexdigest()
-        model_json_file_addr = "tmp/model/" + str(hash_name_hashed) + "/model.json"
-        model_h5_file_addr = "tmp/model/" + str(hash_name_hashed) + "/model.h5"
+        self.hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(self.FLAGS.__str__())).hexdigest()
+        print(self.FLAGS.__str__())
+        model_json_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.json"
+        model_h5_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.h5"
 
         if not os.path.exists(model_json_file_addr):
 
             # model = Sequential()
             # model.add(Dense(43, input_dim=96*20, activation='sigmoid'))#InceptionV3(weights=None, classes=527)
             num_classes = self.dataset.num_classes
-            time_length = int(self.FLAGS.time_resolution/0.01) + 1
+            time_length = int(self.FLAGS.time_resolution/0.02) + 1
             input_shape = (time_length, 40, 1)
             model = InceptionV3(input_shape=input_shape, weights=None,
                                 classes=num_classes,
@@ -431,38 +434,33 @@ class LearnerInceptionV3(Learner):
                                                           beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
                           metrics=['categorical_accuracy', top3_accuracy, 'top_k_categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
 
-            if tf.gfile.Exists('tmp/logs/tensorboard/' + str(hash_name_hashed)):
-                shutil.rmtree('tmp/logs/tensorboard/' + str(hash_name_hashed))
+            if tf.gfile.Exists('tmp/logs/tensorboard/' + str(self.hash_name_hashed)):
+                shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
 
             tensorboard = keras.callbacks.TensorBoard(
-                log_dir='tmp/logs/tensorboard/' + str(hash_name_hashed),
+                log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
                 histogram_freq=10, write_graph=True, write_images=True)
 
             hist = model.fit_generator(
-                self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
-                steps_per_epoch=1,
-                epochs=150,  # 1000000
+                generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
+                steps_per_epoch=850,
+                epochs=5,
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                        batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
                 validation_steps=1,
-                verbose=2,
                 callbacks=[tensorboard]
             )
 
-            if not os.path.exists("tmp/model/" + str(hash_name_hashed)):
-                os.makedirs("tmp/model/" + str(hash_name_hashed))
+            if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
+                os.makedirs("tmp/model/" + str(self.hash_name_hashed))
+                shutil.copytree('application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
+
             # Saving the objects:
             with open('tmp/model/objs.txt', 'wb') as histFile:  # Python 3: open(..., 'wb')
                 # pickle.dump([hist, model], f)
                 for key, value in hist.history.iteritems():
                     histFile.write(key + '-' + ','.join([str(x) for x in value]))
                     histFile.write('\n')
-            # # Getting back the objects:
-            # with open('objs.pickle') as f:  # Python 3: open(..., 'rb')
-            #     hist, model = pickle.load(f)
-
-            # scores = model.evaluate(X, Y, verbose=0)
-            # print("%s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
 
 
             # serialize model to JSON
@@ -490,16 +488,15 @@ class LearnerInceptionV3(Learner):
         input_shape = (time_length, 40, 1)
 
         # load json and create model
-        json_file = open("tmp/model/model.json", 'r')
+        json_file = open("tmp/model/" + self.hash_name_hashed + "/model.json", 'r')
         loaded_model_json = json_file.read()
         json_file.close()
         model = model_from_json(loaded_model_json)
         # load weights into new model
-        model.load_weights("tmp/model/model.h5")
+        model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
         print("Loaded model from disk")
 
-        (X, Y) = self.dataset.get_batch_data(category='testing', batch_size=500, input_shape=input_shape)
-        predictions = model.predict(X, batch_size=500)
-
+        (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing', batch_size=500, input_shape=input_shape)
+        predictions = model.predict_on_batch(X)
         return Y, predictions
 
