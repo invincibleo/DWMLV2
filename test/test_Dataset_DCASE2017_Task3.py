@@ -130,7 +130,7 @@ class MyTestCase(unittest.TestCase):
             return {'F score': results['class_wise_average']['F'], 'Error Rate': results['class_wise_average']['ER']}
 
         # define a search space
-        space = {'lr': hp.choice('lr', [0.0001, 0.001, 0.01, 0.1, 0.5, 1, 10]),
+        space = {'lr': hp.choice('lr', [0.0001, 0.001, 0.1, 1, 10]),
                  'num_second_last_layer': hp.choice('num_second_last_layer', [16, 64, 128, 256, 512, 1024]),
                  'drop_out_rate': hp.choice('drop_out_rate', [0.1, 0.3, 0.5, 0.7, 0.9]),
                  'batch_size': hp.choice('batch_size', [50, 100, 200, 500, 800, 1000])}

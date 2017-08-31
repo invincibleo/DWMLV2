@@ -443,7 +443,7 @@ class LearnerInceptionV3(Learner):
 
             hist = model.fit_generator(
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
-                steps_per_epoch=850,
+                steps_per_epoch=int(220000/self.FLAGS.train_batch_size),
                 epochs=5,
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                        batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
