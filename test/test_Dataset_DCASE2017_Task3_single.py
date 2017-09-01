@@ -101,7 +101,7 @@ class MyTestCase(unittest.TestCase):
         FLAGS, unparsed = parser.parse_known_args()
 
 
-        dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel'])
+        dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel'], normalization=True)
         learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
         evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
 

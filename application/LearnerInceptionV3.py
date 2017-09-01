@@ -418,6 +418,11 @@ class LearnerInceptionV3(Learner):
 
         if not os.path.exists(model_json_file_addr):
 
+            if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
+                os.makedirs("tmp/model/" + str(self.hash_name_hashed))
+                os.makedirs('tmp/model/checkpoints/')
+                shutil.copytree('../../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
+
             # model = Sequential()
             # model.add(Dense(43, input_dim=96*20, activation='sigmoid'))#InceptionV3(weights=None, classes=527)
             num_classes = self.dataset.num_classes
@@ -441,19 +446,17 @@ class LearnerInceptionV3(Learner):
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
                 histogram_freq=10, write_graph=True, write_images=True)
 
+            model_check_point = keras.callbacks.ModelCheckpoint('tmp/model/checkpoints/weights.{epoch:02d}-{val_loss:.2f}.hdf5')
+
             hist = model.fit_generator(
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
-                steps_per_epoch=int(220000/self.FLAGS.train_batch_size),
-                epochs=5,
+                steps_per_epoch=1, #int(220000/self.FLAGS.train_batch_size),
+                epochs=1, # 5
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                        batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
-                validation_steps=1,
-                callbacks=[tensorboard]
+                validation_steps=int(10000/256),
+                callbacks=[tensorboard, model_check_point]
             )
-
-            if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
-                os.makedirs("tmp/model/" + str(self.hash_name_hashed))
-                shutil.copytree('application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
 
             # Saving the objects:
             with open('tmp/model/objs.txt', 'wb') as histFile:  # Python 3: open(..., 'wb')

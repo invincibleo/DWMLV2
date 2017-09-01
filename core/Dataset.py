@@ -18,3 +18,6 @@ class Dataset(object):
         self.num_classes = int(kwargs.get('num_classes', 0))
         self.FLAGS = kwargs.get('flag', '')
         self.preprocessing_methods = kwargs.get('preprocessing_methods', [])
+        self.normalization = kwargs.get('normalization', True)
+        self.training_mean = 0.0
+        self.training_std = 1.0

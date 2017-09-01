@@ -140,9 +140,16 @@ class Dataset_DCASE2017_Task3(Dataset):
                             features.append(np.reshape(feature, (1, -1)))
 
                 if save_features:
-                    features_mean = np.mean(features, axis=0, keepdims=True)
-                    features_std = np.std(features, axis=0, keepdims=True)
-                    features = (features - features_mean)/features_std
+                    # normalization, val and test set using training mean and training std
+                    if self.normalization:
+                        feature_buf = []
+                        for training_point in self.data_list['training']:
+                            feature_idx = training_point.feature_idx
+                            feature_buf.append(features[feature_idx])
+                            self.training_mean = np.mean(feature_buf, axis=0, keepdims=True)
+                            self.training_std = np.std(feature_buf, axis=0, keepdims=True)
+                            features = (features - self.training_mean) / self.training_std
+
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
 
             if not tf.gfile.Exists("tmp/dataset"):
