@@ -132,7 +132,7 @@ def main():
     _setup_keras()
 
     dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot',
-                                      preprocessing_methods=['mel'])
+                                      preprocessing_methods=['mel'], normalization=True, dimension=40)
     learner = LearnerMLP(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
     evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list,
                                                              time_resolution=FLAGS.time_resolution)

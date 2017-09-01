@@ -420,8 +420,8 @@ class LearnerInceptionV3(Learner):
 
             if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
                 os.makedirs("tmp/model/" + str(self.hash_name_hashed))
-                os.makedirs('tmp/model/checkpoints/')
-                shutil.copytree('../../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
+                os.makedirs('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/')
+                shutil.copytree('../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
 
             # model = Sequential()
             # model.add(Dense(43, input_dim=96*20, activation='sigmoid'))#InceptionV3(weights=None, classes=527)
@@ -450,11 +450,11 @@ class LearnerInceptionV3(Learner):
 
             hist = model.fit_generator(
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
-                steps_per_epoch=1, #int(220000/self.FLAGS.train_batch_size),
-                epochs=1, # 5
+                steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
+                epochs=5,
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                        batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
-                validation_steps=int(10000/256),
+                validation_steps=int(self.dataset.num_validation_data/256),
                 callbacks=[tensorboard, model_check_point]
             )
 
@@ -487,7 +487,7 @@ class LearnerInceptionV3(Learner):
 
     def predict(self):
         num_classes = self.dataset.num_classes
-        time_length = int(self.FLAGS.time_resolution / 0.01) + 1
+        time_length = int(self.FLAGS.time_resolution / 0.02) + 1
         input_shape = (time_length, 40, 1)
 
         # load json and create model

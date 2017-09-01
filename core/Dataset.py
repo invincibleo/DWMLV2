@@ -9,6 +9,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+
+
+
 class Dataset(object):
 
     def __init__(self, *args, **kwargs):
@@ -21,3 +25,7 @@ class Dataset(object):
         self.normalization = kwargs.get('normalization', True)
         self.training_mean = 0.0
         self.training_std = 1.0
+        self.num_training_data = kwargs.get('num_training_data', 0)
+        self.num_validation_data = kwargs.get('num_validation_data', 0)
+        self.num_testing_data = kwargs.get('num_testing_data', 0)
+

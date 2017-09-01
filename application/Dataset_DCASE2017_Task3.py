@@ -18,13 +18,13 @@ import math
 import pickle
 import random
 
+from tqdm import tqdm
 from core.Dataset import Dataset
 from core.GeneralFileAccessor import GeneralFileAccessor
 from core.TimeseriesPoint import *
 from core.Preprocessing import *
 from core.util import *
 
-PICKLE_FILE_ADDR = './tmp/dataset_DCASE2017task3.pickle'
 FEATURE_DIR_ADDR = 'tmp/feature/DCASE2017'
 
 
@@ -38,6 +38,30 @@ class Dataset_DCASE2017_Task3(Dataset):
         self.num_classes = len(self.label_list)
         self.data_list = self.create_data_list()
 
+    def get_feature_file_addr(self, sub_dir, data_name):
+        return os.path.join(FEATURE_DIR_ADDR, 'time_res' + str(self.FLAGS.time_resolution),
+                            sub_dir, data_name.split('.')[0] + '.pickle')
+
+    def online_mean_variance(self, new_batch_data):
+        self.num_training_data = 0
+        mean = np.zeros((1, np.shape(new_batch_data)[2]))
+        M2 = np.zeros((1, np.shape(new_batch_data)[2]))
+
+        for data_point in new_batch_data:
+            x = data_point
+            self.num_training_data += 1
+            delta = x - mean
+            mean += delta / self.num_training_data
+            delta2 = x - mean
+            M2 += delta * delta2
+
+        self.training_mean = mean
+        if self.num_training_data < 2:
+            self.training_std = float('nan')
+        else:
+            self.training_std = np.sqrt(M2 / self.num_training_data)
+
+
     def create_data_list(self):
         pickle_file = 'tmp/dataset/DCASE2017_onehot' + 'time_res' + str(self.FLAGS.time_resolution) + '.pickle'
         if not tf.gfile.Exists(pickle_file) or not tf.gfile.Exists(FEATURE_DIR_ADDR):
@@ -45,7 +69,7 @@ class Dataset_DCASE2017_Task3(Dataset):
             audio_file_list = [x[:-4] for x in tf.gfile.ListDirectory(individual_meta_file_base_addr)]
 
             data_list = {'validation': [], 'testing': [], 'training': []}
-            for audio_file in audio_file_list:
+            for audio_file in tqdm(audio_file_list, desc='Creating features:'):
                 audio_meta_file_addr = os.path.join(individual_meta_file_base_addr, audio_file + '.ann')
                 audio_file_addr = os.path.join(os.path.join(self.dataset_dir, 'audio/street/'), audio_file + '.wav')
                 audio_raw_all, fs = GeneralFileAccessor(file_path=audio_file_addr,
@@ -61,7 +85,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                     if not tf.gfile.Exists(feature_base_addr):
                         os.makedirs(feature_base_addr)
                     save_features = True
-                    features = []
+                    features = {}
                 else:
                     save_features = False
                     features = pickle.load(open(feature_file_addr, 'rb'))
@@ -97,7 +121,8 @@ class Dataset_DCASE2017_Task3(Dataset):
                             # feature extraction
                             audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.floor(end_time * fs))]
                             feature = Preprocessing.feature_extraction(dataset=self, audio_raw=audio_raw)
-                            features.append(np.reshape(feature, (1, -1)))
+                            features[point_idx] = np.reshape(feature, (1, -1))
+                            # features[point_idx]=feature
 
                 elif self.encoding == 'onehot':
                     for point_idx in range(event_roll.shape[0]):
@@ -118,7 +143,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                                             label_content=np.reshape(label_content, (1, -1)),
                                             extension='wav',
                                             fs=fs,
-                                            feature_idx=point_idx,
+                                            feature_idx=point_idx * idx + idx,
                                             start_time=start_time,
                                             end_time=end_time
                                         )
@@ -137,20 +162,39 @@ class Dataset_DCASE2017_Task3(Dataset):
                             # feature extraction
                             audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.floor(end_time * fs))]
                             feature = Preprocessing.feature_extraction(dataset=self, audio_raw=audio_raw)
-                            features.append(np.reshape(feature, (1, -1)))
+                            features[point_idx] = np.reshape(feature, (1, -1))
+                            # features[point_idx] = feature
 
                 if save_features:
-                    # normalization, val and test set using training mean and training std
-                    if self.normalization:
-                        feature_buf = []
-                        for training_point in self.data_list['training']:
-                            feature_idx = training_point.feature_idx
-                            feature_buf.append(features[feature_idx])
-                            self.training_mean = np.mean(feature_buf, axis=0, keepdims=True)
-                            self.training_std = np.std(feature_buf, axis=0, keepdims=True)
-                            features = (features - self.training_mean) / self.training_std
-
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
+
+            # normalization, val and test set using training mean and training std
+            if self.normalization:
+                mean_std_file_addr = os.path.join(FEATURE_DIR_ADDR, 'mean_std_time_res' + str(self.FLAGS.time_resolution))
+                if not tf.gfile.Exists(mean_std_file_addr):
+                    feature_buf = []
+                    batch_count = 0
+                    for training_point in tqdm(data_list['training'], desc='Computing training set mean and std'):
+                        feature_idx = training_point.feature_idx
+                        data_name = training_point.data_name
+                        sub_dir = training_point.sub_dir
+                        feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
+                        features = pickle.load(open(feature_file_addr, 'rb'))
+
+                        feature_buf.append(features[feature_idx])
+                        batch_count += 1
+                        if batch_count >= 1024:
+                            self.online_mean_variance(feature_buf)
+                            feature_buf = []
+                            batch_count = 0
+                    pickle.dump((self.training_mean, self.training_std), open(mean_std_file_addr, 'wb'), 2)
+                else:
+                    self.training_mean, self.training_std = pickle.load(open(mean_std_file_addr, 'rb'))
+
+            # count data point
+            self.num_training_data = len(data_list['training'])
+            self.num_validation_data = len(data_list['validation'])
+            self.num_testing_data = len(data_list['testing'])
 
             if not tf.gfile.Exists("tmp/dataset"):
                 os.makedirs("tmp/dataset")
@@ -185,6 +229,8 @@ class Dataset_DCASE2017_Task3(Dataset):
                 features = pickle.load(open(feature_file_addr, 'rb'))
 
                 feature = features[feature_idx]
+                # if normalization then mean and std would not be 0 and 1 separately
+                feature = (feature - self.training_mean) / self.training_std
                 feature = np.reshape(feature, input_shape)
 
                 if not len(X) and not len(Y):
@@ -227,6 +273,8 @@ class Dataset_DCASE2017_Task3(Dataset):
                 features = pickle.load(open(feature_file_addr, 'rb'))
 
                 feature = features[feature_idx]
+                # if normalization then mean and std would not be 0 and 1 separately
+                feature = (feature - self.training_mean) / self.training_std
                 feature = np.reshape(feature, input_shape)
 
                 if not len(X) and not len(Y):

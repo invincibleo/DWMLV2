@@ -108,7 +108,7 @@ class MyTestCase(unittest.TestCase):
             FLAGS.drop_out_rate = args['drop_out_rate']
             FLAGS.train_batch_size = args['batch_size']
 
-            dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel'])
+            dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel'], normalization=True, dimension=40)
             learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
             evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
 

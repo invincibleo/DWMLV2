@@ -26,8 +26,6 @@ def ensure_dir_exists(dir_name):
 
 def get_data_file_path(dataset, data_name):
     data_list = dataset.data_list
-
-
     sub_dir = label_lists['subdir']
     full_path = os.path.join(base_dir, sub_dir, data_name)
     return full_path
