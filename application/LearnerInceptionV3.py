@@ -446,16 +446,16 @@ class LearnerInceptionV3(Learner):
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
                 histogram_freq=10, write_graph=True, write_images=True)
 
-            model_check_point = keras.callbacks.ModelCheckpoint('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5')
+            model_check_point = keras.callbacks.ModelCheckpoint('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5', save_best_only=True, save_weights_only=True, mode='min')
 
             hist = model.fit_generator(
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
-                epochs=200,
+                epochs=100,
+                callbacks=[tensorboard, model_check_point],
                 validation_data=self.dataset.generate_batch_data(category='validation',
-                                                                       batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
-                validation_steps=int(self.dataset.num_validation_data/256),
-                callbacks=[tensorboard, model_check_point]
+                                                                batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
+                validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size),
             )
 
             # Saving the objects:
@@ -502,4 +502,3 @@ class LearnerInceptionV3(Learner):
         (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing', batch_size=500, input_shape=input_shape)
         predictions = model.predict_on_batch(X)
         return Y, predictions
-

@@ -168,39 +168,39 @@ class Dataset_DCASE2017_Task3(Dataset):
                 if save_features:
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
 
-            # normalization, val and test set using training mean and training std
-            if self.normalization:
-                mean_std_file_addr = os.path.join(FEATURE_DIR_ADDR, 'mean_std_time_res' + str(self.FLAGS.time_resolution))
-                if not tf.gfile.Exists(mean_std_file_addr):
-                    feature_buf = []
-                    batch_count = 0
-                    for training_point in tqdm(data_list['training'], desc='Computing training set mean and std'):
-                        feature_idx = training_point.feature_idx
-                        data_name = training_point.data_name
-                        sub_dir = training_point.sub_dir
-                        feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
-                        features = pickle.load(open(feature_file_addr, 'rb'))
-
-                        feature_buf.append(features[feature_idx])
-                        batch_count += 1
-                        if batch_count >= 1024:
-                            self.online_mean_variance(feature_buf)
-                            feature_buf = []
-                            batch_count = 0
-                    pickle.dump((self.training_mean, self.training_std), open(mean_std_file_addr, 'wb'), 2)
-                else:
-                    self.training_mean, self.training_std = pickle.load(open(mean_std_file_addr, 'rb'))
-
-            # count data point
-            self.num_training_data = len(data_list['training'])
-            self.num_validation_data = len(data_list['validation'])
-            self.num_testing_data = len(data_list['testing'])
-
             if not tf.gfile.Exists("tmp/dataset"):
                 os.makedirs("tmp/dataset")
             pickle.dump(data_list, open(pickle_file, 'wb'), 2)
         else:
             data_list = pickle.load(open(pickle_file, 'rb'))
+
+        # normalization, val and test set using training mean and training std
+        if self.normalization:
+            mean_std_file_addr = os.path.join(FEATURE_DIR_ADDR, 'mean_std_time_res' + str(self.FLAGS.time_resolution))
+            if not tf.gfile.Exists(mean_std_file_addr):
+                feature_buf = []
+                batch_count = 0
+                for training_point in tqdm(data_list['training'], desc='Computing training set mean and std'):
+                    feature_idx = training_point.feature_idx
+                    data_name = training_point.data_name
+                    sub_dir = training_point.sub_dir
+                    feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
+                    features = pickle.load(open(feature_file_addr, 'rb'))
+
+                    feature_buf.append(features[feature_idx])
+                    batch_count += 1
+                    if batch_count >= 1024:
+                        self.online_mean_variance(feature_buf)
+                        feature_buf = []
+                        batch_count = 0
+                pickle.dump((self.training_mean, self.training_std), open(mean_std_file_addr, 'wb'), 2)
+            else:
+                self.training_mean, self.training_std = pickle.load(open(mean_std_file_addr, 'rb'))
+
+        # count data point
+        self.num_training_data = len(data_list['training'])
+        self.num_validation_data = len(data_list['validation'])
+        self.num_testing_data = len(data_list['testing'])
         return data_list
 
     def generate_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
