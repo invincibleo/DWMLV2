@@ -446,12 +446,12 @@ class LearnerInceptionV3(Learner):
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
                 histogram_freq=10, write_graph=True, write_images=True)
 
-            model_check_point = keras.callbacks.ModelCheckpoint('tmp/model/checkpoints/weights.{epoch:02d}-{val_loss:.2f}.hdf5')
+            model_check_point = keras.callbacks.ModelCheckpoint('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5')
 
             hist = model.fit_generator(
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
-                epochs=5,
+                epochs=200,
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                        batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
                 validation_steps=int(self.dataset.num_validation_data/256),
