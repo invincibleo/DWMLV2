@@ -433,9 +433,12 @@ class LearnerInceptionV3(Learner):
                                 num_second_last_layer=self.FLAGS.num_second_last_layer,
                                 drop_out_rate=self.FLAGS.drop_out_rate)
 
+            # load weights into new model
+            model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
+
             # Compile model
             model.compile(loss='categorical_crossentropy',
-                          optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate,
+                          optimizer=keras.optimizers.Adam(lr=0.0003, #self.FLAGS.learning_rate,
                                                           beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
                           metrics=['categorical_accuracy', top3_accuracy, 'top_k_categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
 
@@ -451,7 +454,8 @@ class LearnerInceptionV3(Learner):
             hist = model.fit_generator(
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
-                epochs=100,
+                initial_epoch=100,
+                epochs=300,
                 callbacks=[tensorboard, model_check_point],
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
@@ -497,8 +501,12 @@ class LearnerInceptionV3(Learner):
         model = model_from_json(loaded_model_json)
         # load weights into new model
         model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
+        # model.load_weights("tmp/model/" + self.hash_name_hashed + "/checkpoints/weights.43-0.89.hdf5")
+
         print("Loaded model from disk")
 
-        (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing', batch_size=500, input_shape=input_shape)
+        (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing',
+                                                              batch_size=self.dataset.num_testing_data,
+                                                              input_shape=input_shape)
         predictions = model.predict_on_batch(X)
         return Y, predictions
