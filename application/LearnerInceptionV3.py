@@ -416,7 +416,8 @@ class LearnerInceptionV3(Learner):
         model_json_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.json"
         model_h5_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.h5"
 
-        if not os.path.exists(model_json_file_addr):
+        continue_training = False
+        if not os.path.exists(model_json_file_addr) or continue_training:
 
             if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
                 os.makedirs("tmp/model/" + str(self.hash_name_hashed))
@@ -433,17 +434,18 @@ class LearnerInceptionV3(Learner):
                                 num_second_last_layer=self.FLAGS.num_second_last_layer,
                                 drop_out_rate=self.FLAGS.drop_out_rate)
 
-            # load weights into new model
-            model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
+            if continue_training:
+                # load weights into new model
+                model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
 
             # Compile model
             model.compile(loss='categorical_crossentropy',
-                          optimizer=keras.optimizers.Adam(lr=0.0003, #self.FLAGS.learning_rate,
+                          optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate,
                                                           beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
                           metrics=['categorical_accuracy', top3_accuracy, 'top_k_categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
 
-            if tf.gfile.Exists('tmp/logs/tensorboard/' + str(self.hash_name_hashed)):
-                shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
+            # if tf.gfile.Exists('tmp/logs/tensorboard/' + str(self.hash_name_hashed)):
+            #     shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
 
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
@@ -454,8 +456,8 @@ class LearnerInceptionV3(Learner):
             hist = model.fit_generator(
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
-                initial_epoch=100,
-                epochs=300,
+                # initial_epoch=100,
+                epochs=10,
                 callbacks=[tensorboard, model_check_point],
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
@@ -501,7 +503,7 @@ class LearnerInceptionV3(Learner):
         model = model_from_json(loaded_model_json)
         # load weights into new model
         model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
-        # model.load_weights("tmp/model/" + self.hash_name_hashed + "/checkpoints/weights.43-0.89.hdf5")
+        # model.load_weights("tmp/model/" + self.hash_name_hashed + "/checkpoints/weights.128-1.05.hdf5")
 
         print("Loaded model from disk")
 

@@ -1,7 +1,7 @@
 import unittest
 import argparse
 import datetime
-from hyperopt import fmin, tpe, hp
+from hyperopt import fmin, tpe, hp, STATUS_OK
 
 
 from application.Dataset_DCASE2017_Task3 import *
@@ -9,7 +9,7 @@ from application.LearnerInceptionV3 import LearnerInceptionV3
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 
 
-DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/SoundEventRecognition/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development"
+DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/DWML_V2/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development"
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         parser = argparse.ArgumentParser()
@@ -108,15 +108,17 @@ class MyTestCase(unittest.TestCase):
             FLAGS.drop_out_rate = args['drop_out_rate']
             FLAGS.train_batch_size = args['batch_size']
 
-            dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot', preprocessing_methods=['mel'], normalization=True, dimension=40)
+            dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot',
+                                              preprocessing_methods=['mel'], normalization=True, dimension=40)
             learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
-            evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
+            evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list,
+                                                                     time_resolution=FLAGS.time_resolution)
 
             # dataset.get_batch_data('training', 10, (-1, 40, 1))
 
             learner.learn()
             truth, prediction = learner.predict()
-            evaluator.evaluate(truth, prediction)
+            evaluator.evaluate(truth, prediction, threshold=0.8)
             results = evaluator.results()
 
             results_dir_addr = 'tmp/results/'
@@ -127,10 +129,10 @@ class MyTestCase(unittest.TestCase):
                 with open(results_dir_addr + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
                     f.write(str(FLAGS))
 
-            return {'F score': results['class_wise_average']['F'], 'Error Rate': results['class_wise_average']['ER']}
-
+            # return {'F score': results['class_wise_average']['F'], 'Error Rate': results['class_wise_average']['ER']}
+            return {'loss': results['class_wise_average']['ER'], 'status': STATUS_OK}
         # define a search space
-        space = {'lr': hp.choice('lr', [0.0001, 0.001, 0.1, 1, 10]),
+        space = {'lr': hp.choice('lr', [0.0001, 0.001, 0.005, 0.01, 0.1]),
                  'num_second_last_layer': hp.choice('num_second_last_layer', [16, 64, 128, 256, 512, 1024]),
                  'drop_out_rate': hp.choice('drop_out_rate', [0.1, 0.3, 0.5, 0.7, 0.9]),
                  'batch_size': hp.choice('batch_size', [64, 128, 256, 512])}
