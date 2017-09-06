@@ -36,10 +36,10 @@ class Dataset(object):
         self.num_validation_data = kwargs.get('num_validation_data', 0)
         self.num_testing_data = kwargs.get('num_testing_data', 0)
 
-        self.feature_parameter_file_addr = kwargs.get('feature_parameter_file_addr', "")
-        if self.feature_parameter_file_addr == "":
-            self.feature_parameter_file_addr = self.FLAGS.feature_parameter_file
-        self.feature_parameters = json.load(open(self.feature_parameter_file_addr, 'r'))
+        self.feature_parameter_dir = kwargs.get('feature_parameter_dir', "")
+        if self.feature_parameter_dir == "":
+            self.feature_parameter_dir = self.FLAGS.parameter_dir
+        self.feature_parameters = json.load(open(self.feature_parameter_dir + '/feature_parameters.json', 'r'))
 
         if self.dataset_list_dir == "":
             self.dataset_list_dir = os.path.join('tmp/dataset/', self.dataset_name)
@@ -58,9 +58,9 @@ class Dataset(object):
         hash_parameters = hashlib.sha1(str(self.feature_parameters)).hexdigest()
         feature_with_parameters_dir = os.path.join(self.feature_dir,
                                                    'timeRes-' + str(self.FLAGS.time_resolution) + '-' + hash_parameters)
-        feature_parameter_file_name = self.feature_parameter_file_addr.split('/')[-1]
+        feature_parameter_file_name = 'feature_parameters.json'
         tf.gfile.MakeDirs(feature_with_parameters_dir)
-        tf.gfile.Copy(oldpath=self.feature_parameter_file_addr,
+        tf.gfile.Copy(oldpath=os.path.join(self.feature_parameter_dir, feature_parameter_file_name),
                       newpath=os.path.join(feature_with_parameters_dir, feature_parameter_file_name),
                       overwrite=True)
         return os.path.join(feature_with_parameters_dir, sub_dir, data_name.split('.')[0] + '.pickle')

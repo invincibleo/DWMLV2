@@ -15,11 +15,12 @@ import argparse
 import datetime
 
 from application.Dataset_DCASE2017_Task3 import *
+from application.Dataset_Youtube8M import *
 from application.LearnerMLP import LearnerMLP
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 
 DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/DWML_V2/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development"
-
+YOUTUBE_DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Leo/Audioset"
 
 def _setup_keras():
     """Setup keras backend and parameters
@@ -137,11 +138,11 @@ def main():
         """
     )
     parser.add_argument(
-        '--feature_parameter_file',
+        '--parameter_dir',
         type=str,
-        default="./parameters/feature_parameters.json",
+        default="parameters",
         help="""\
-        feature parameters file
+        parameter folder
         \
         """
     )
@@ -149,8 +150,9 @@ def main():
 
     _setup_keras()
 
-    dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, encoding='khot',
-                                      preprocessing_methods=['mel'], normalization=True, dimension=40)
+    # dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS,
+    #                                   preprocessing_methods=['mel'], normalization=True)
+    dataset = Dataset_Youtube8M(dataset_dir=YOUTUBE_DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'], normalization=True)
     learner = LearnerMLP(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
     evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list,
                                                              time_resolution=FLAGS.time_resolution)

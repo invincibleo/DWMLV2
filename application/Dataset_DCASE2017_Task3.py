@@ -39,7 +39,6 @@ class Dataset_DCASE2017_Task3(Dataset):
                                                       *args, **kwargs)
         self.data_list = self.create_data_list()
 
-
     def create_data_list(self):
         datalist_pickle_file = self.get_dataset_file_addr()
         if not tf.gfile.Exists(datalist_pickle_file) or not tf.gfile.Exists(self.feature_dir):

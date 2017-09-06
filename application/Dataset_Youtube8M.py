@@ -12,77 +12,203 @@ from __future__ import print_function
 
 import os
 import tensorflow as tf
-from core.Dataset import Dataset
+from tqdm import tqdm
+import pickle
+import numpy as np
+import csv
+import pandas
+import hashlib
 
-PICKLE_FILE_ADDR = './tmp/dataset_youtube8m.pickle'
+from core.Dataset import Dataset
+from core.GeneralFileAccessor import GeneralFileAccessor
+from core.TimeseriesPoint import *
+from core.Preprocessing import *
+from core.util import *
+from core.ontologyProcessing import *
 
 
 class Dataset_Youtube8M(Dataset):
     
     def __init__(self, *args, **kwargs):
-        super(Dataset_Youtube8M, self).__init__(self, *args, **kwargs)
-        self.dataset_name = 'Dataset_Youtube8M'
-        self.label_list = sorted(['people walking', 'car', 'large vehicle', 'people speaking', 'brakes squeaking', 'children'])
-        self.encoding = kwargs.get('encoding', 'khot')
+        dataset_name = 'Dataset_Youtube8M'
+        super(Dataset_Youtube8M, self).__init__(self, dataset_name=dataset_name, *args, **kwargs)
+        self.aso = {}
+        self.if_second_level_labels = kwargs.get('if_second_level_labels', False)
+        self.data_list_meta = []
+        self.label_list = self.get_label_list()
         self.num_classes = len(self.label_list)
+        self.extensions = ['wav']
         self.data_list = self.create_data_list()
 
+    def get_label_list(self):
+        ontology_file_addr = os.path.join(self.FLAGS.parameter_dir, 'ontology.json')
+
+        csv_file_addr = os.path.join(self.FLAGS.parameter_dir, 'balanced_train_segments.csv')
+        data_list_meta = pandas.read_csv(filepath_or_buffer=csv_file_addr,
+                                         sep=' ',
+                                         header=None,
+                                         skiprows=3
+                                         )
+        self.data_list_meta = dict(zip(data_list_meta[0].str.replace(',', ''), data_list_meta[3].str.split(',')))
+
+        if self.if_second_level_labels:
+            second_level_class, self.aso = OntologyProcessing.get_2nd_level_label_name_list(ontology_file_addr)
+            return sorted(second_level_class)
+        else:
+            self.aso = OntologyProcessing.get_label_name_list(ontology_file_addr)
+            label_list_set = set()
+            for values in self.data_list_meta.values():
+                for label in values:
+                    label_list_set.add(label)
+            return sorted(list(label_list_set))
+
     def create_data_list(self):
-        if not tf.gfile.Exists(PICKLE_FILE_ADDR):
-            if not tf.gfile.Exists(self.dataset_dir):
-                print("Dataset directory '" + self.dataset_dir + "' not found.")
-                return None
-            result = {}
-            # The root directory comes first, so skip it.
-            file_list = []
+        datalist_pickle_file = self.get_dataset_file_addr()
+        if not tf.gfile.Exists(datalist_pickle_file) or not tf.gfile.Exists(self.feature_dir):
+            audio_file_list = []
             for extension in self.extensions:
                 file_glob = os.path.join(self.dataset_dir, '*.' + extension)
-                file_list.extend(tf.gfile.Glob(file_glob))
+                audio_file_list.extend(tf.gfile.Glob(file_glob))
 
-            if not file_list:
-                print('No files found')
-                return None
+            data_list = {'validation': [], 'testing': [], 'training': []}
+            for audio_file_addr in tqdm(audio_file_list, desc='Creating features:'):
+                audio_file = os.path.basename(audio_file_addr)
+                audio_raw_all, fs = GeneralFileAccessor(file_path=audio_file_addr,
+                                                        mono=True).read()
+                num_points = int(np.floor(len(audio_raw_all) / fs))
 
-            aso = OntologyProcessing.get_label_name_list(os.path.join(os.path.dirname(__file__), 'ontology.json'))
-            second_level_class = OntologyProcessing.get_2nd_level_label_name_list(os.path.join(os.path.dirname(__file__), 'ontology.json'))
-            with open(os.path.join(os.path.split(os.path.realpath(__file__))[0], os.path.join(os.path.dirname(__file__), 'balanced_train_segments.csv')), 'rb') as csvfile:
-                label_list = csv.reader(csvfile, delimiter=',')
+                feature_file_addr = self.get_feature_file_addr('', audio_file)
+                if not tf.gfile.Exists(feature_file_addr):
+                    feature_base_addr = '/'.join(feature_file_addr.split('/')[:-1])
+                    if not tf.gfile.Exists(feature_base_addr):
+                        os.makedirs(feature_base_addr)
+                    save_features = True
+                    features = {}
+                else:
+                    save_features = False
+                    features = pickle.load(open(feature_file_addr, 'rb'))
 
-                result = {}
+                if self.if_second_level_labels:
+                    label_name = self.data_list_meta[audio_file.split('.')[0]]
+                    second_level_class_name = OntologyProcessing.get_2nd_level_class_label_index(label_name, self.aso,
+                                                                                                 self.label_list)
+                    label_name = ''
+                    label_content = np.zeros((1, self.num_classes))
+                    for class_name in second_level_class_name:
+                        label_content[0, self.label_list.index(class_name)] = 1
+                        label_name = label_name + self.aso[class_name]['name'] + ','
+                else:
+                    label_name_list = self.data_list_meta[audio_file.split('.')[0]]
+                    label_name = ''
 
-                file_list = [os.path.basename(x) for x in file_list]  # [:-4]
-                extension_name = file_list[0].split('.')[-1]
-                for label in tqdm(islice(label_list, 3, None), total=22163):
-                    file_name = label[0] + '.' + extension_name
-                    file_label = [re.sub(r'[ "]', '', x) for x in label[3:]]
+                if self.FLAGS.coding == 'khot':
+                    label_content = np.zeros((1, self.num_classes))
+                    for class_name in label_name_list:
+                        label_content[0, self.label_list.index(class_name)] = 1
+                        label_name = label_name + self.aso[class_name]['name'] + ','
 
-                    if file_name in file_list:
-                        hash_name = file_name
-                        # This looks a bit magical, but we need to decide whether this file should
-                        # go into the training, testing, or validation sets, and we want to keep
-                        # existing files in the same set even if more files are subsequently
-                        # added.
-                        # To do that, we need a stable way of deciding based on just the file name
-                        # itself, so we do a hash of that and then use that to generate a
-                        # probability value that we use to assign it.
-                        hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(hash_name)).hexdigest()
-                        percentage_hash = ((int(hash_name_hashed, 16) % (self.max_num_data_per_class + 1)) *
-                                           (100.0 / self.max_num_data_per_class))
-                        for label in file_label:
-                            second_level_class_name = OntologyProcessing.get_2nd_level_class_label_index([label], aso, second_level_class)
-                            label_name = aso[second_level_class_name[0]]['name']  ###label
-                            if label_name == 'Animal':
-                                continue
-                            if not label_name in result.keys():
-                                result[label_name] = {'subdir': '', 'validation': [], 'testing': [], 'training': []}
+                    for point_idx in range(num_points):
+                        start_time = point_idx * self.FLAGS.time_resolution
+                        end_time = (point_idx + 1) * self.FLAGS.time_resolution
+                        new_point = AudioPoint(
+                            data_name=audio_file + '.wav',
+                            sub_dir='',
+                            label_name=label_name,
+                            label_content=label_content,
+                            extension='wav',
+                            fs=fs,
+                            feature_idx=point_idx,
+                            start_time=start_time,
+                            end_time=end_time
+                        )
+                        hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(audio_file + str(point_idx))).hexdigest()
+                        percentage_hash = int(hash_name_hashed, 16) % (100 + 1)
 
-                            if percentage_hash < self.validation_percentage:
-                                result[label_name]['validation'].append(file_name)
-                            elif percentage_hash < (self.testing_percentage + self.validation_percentage):
-                                result[label_name]['testing'].append(file_name)
+                        if percentage_hash < self.FLAGS.validation_percentage:
+                            data_list['validation'].append(new_point)
+                        elif percentage_hash < (self.FLAGS.testing_percentage + self.FLAGS.validation_percentage):
+                            data_list['testing'].append(new_point)
+                        else:
+                            data_list['training'].append(new_point)
+
+                        if save_features:
+                            # feature extraction
+                            audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.floor(end_time * fs))]
+                            feature = Preprocessing(parameters=self.feature_parameters).feature_extraction(dataset=self,
+                                                                                                           audio_raw=audio_raw)
+                            features[point_idx] = np.reshape(feature, (1, -1))
+                            # features[point_idx]=feature
+
+                elif self.FLAGS.coding == 'onehot':
+                    for point_idx in range(num_points):
+                        start_time = point_idx * self.FLAGS.time_resolution
+                        end_time = (point_idx + 1) * self.FLAGS.time_resolution
+                        for label in label_name_list:
+                            label_name = label
+                            label_content = np.zeros((1, self.num_classes))
+                            label_content[self.label_list.index(label)] = 1
+                            new_point = AudioPoint(
+                                data_name=audio_file + '.wav',
+                                sub_dir='',
+                                label_name=label_name,
+                                label_content=label_content,
+                                extension='wav',
+                                fs=fs,
+                                feature_idx=point_idx,
+                                start_time=start_time,
+                                end_time=end_time
+                            )
+                            hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(audio_file + str(point_idx) + str(label))).hexdigest()
+                            percentage_hash = int(hash_name_hashed, 16) % (100 + 1)
+
+                            if percentage_hash < self.FLAGS.validation_percentage:
+                                data_list['validation'].append(new_point)
+                            elif percentage_hash < (self.FLAGS.testing_percentage + self.FLAGS.validation_percentage):
+                                data_list['testing'].append(new_point)
                             else:
-                                result[label_name]['training'].append(file_name)
-            pickle.dump(result, open(PICKLE_FILE_ADDR, 'wb'), 2)
+                                data_list['training'].append(new_point)
+
+                        if save_features:
+                            # feature extraction
+                            audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.floor(end_time * fs))]
+                            feature = Preprocessing(parameters=self.feature_parameters).feature_extraction(dataset=self,
+                                                                                                           audio_raw=audio_raw)
+                            features[point_idx] = np.reshape(feature, (1, -1))
+                            # features[point_idx]=feature
+
+                if save_features:
+                    pickle.dump(features, open(feature_file_addr, 'wb'), 2)
+            pickle.dump(data_list, open(datalist_pickle_file, 'wb'), 2)
         else:
-            result = pickle.load(open(PICKLE_FILE_ADDR, 'rb'))
-        return result
+            data_list = pickle.load(open(datalist_pickle_file, 'rb'))
+
+        # normalization, val and test set using training mean and training std
+        if self.normalization:
+            mean_std_file_addr = os.path.join(self.feature_dir, 'mean_std_time_res' + str(self.FLAGS.time_resolution))
+            if not tf.gfile.Exists(mean_std_file_addr):
+                feature_buf = []
+                batch_count = 0
+                for training_point in tqdm(data_list['training'], desc='Computing training set mean and std'):
+                    feature_idx = training_point.feature_idx
+                    data_name = training_point.data_name
+                    sub_dir = training_point.sub_dir
+                    feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
+                    features = pickle.load(open(feature_file_addr, 'rb'))
+
+                    feature_buf.append(features[feature_idx])
+                    batch_count += 1
+                    if batch_count >= 1024:
+                        self.online_mean_variance(feature_buf)
+                        feature_buf = []
+                        batch_count = 0
+                pickle.dump((self.training_mean, self.training_std), open(mean_std_file_addr, 'wb'), 2)
+            else:
+                self.training_mean, self.training_std = pickle.load(open(mean_std_file_addr, 'rb'))
+
+        # count data point
+        self.num_training_data = len(data_list['training'])
+        self.num_validation_data = len(data_list['validation'])
+        self.num_testing_data = len(data_list['testing'])
+        return data_list
+
+
