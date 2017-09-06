@@ -31,6 +31,11 @@ class LearnerMLP(Learner):
 
         if not os.path.exists(model_json_file_addr):
 
+            if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
+                os.makedirs("tmp/model/" + str(self.hash_name_hashed))
+                os.makedirs('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/')
+                shutil.copytree('../../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
+
             # model = Sequential()
             # model.add(Dense(43, input_dim=96*20, activation='sigmoid'))#InceptionV3(weights=None, classes=527)
             num_classes = self.dataset.num_classes
@@ -56,15 +61,17 @@ class LearnerMLP(Learner):
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
                 histogram_freq=10, write_graph=True, write_images=True, write_grads=True, batch_size=100)
 
+            model_check_point = keras.callbacks.ModelCheckpoint('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5', save_best_only=True, save_weights_only=True, mode='min')
 
             hist = model.fit_generator(
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
-                steps_per_epoch=850,
-                epochs=50,
+                steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
+                # initial_epoch=100,
+                epochs=200,
+                callbacks=[tensorboard, model_check_point],
                 validation_data=self.dataset.generate_batch_data(category='validation',
-                                                                       batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
-                validation_steps=1,
-                callbacks=[tensorboard]
+                                                                batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
+                validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size),
             )
 
 
@@ -82,10 +89,6 @@ class LearnerMLP(Learner):
             #     verbose=2,
             #     callbacks=[tensorboard],
             # )
-
-            if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
-                os.makedirs("tmp/model/" + str(self.hash_name_hashed))
-                shutil.copytree('../../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
 
             # Saving the objects:
             with open('tmp/model/objs.txt', 'wb') as histFile:  # Python 3: open(..., 'wb')

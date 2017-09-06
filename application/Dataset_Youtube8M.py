@@ -20,12 +20,12 @@ PICKLE_FILE_ADDR = './tmp/dataset_youtube8m.pickle'
 class Dataset_Youtube8M(Dataset):
     
     def __init__(self, *args, **kwargs):
-        self.data_list = self.create_data_list()
+        super(Dataset_Youtube8M, self).__init__(self, *args, **kwargs)
         self.dataset_name = 'Dataset_Youtube8M'
-        super(Dataset_Youtube8M, self).__init__(self,
-                                                data_list=self.data_list,
-                                                dataset_name=self.dataset_name,
-                                                *args, **kwargs)
+        self.label_list = sorted(['people walking', 'car', 'large vehicle', 'people speaking', 'brakes squeaking', 'children'])
+        self.encoding = kwargs.get('encoding', 'khot')
+        self.num_classes = len(self.label_list)
+        self.data_list = self.create_data_list()
 
     def create_data_list(self):
         if not tf.gfile.Exists(PICKLE_FILE_ADDR):

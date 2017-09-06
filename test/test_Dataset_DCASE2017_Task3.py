@@ -99,6 +99,24 @@ class MyTestCase(unittest.TestCase):
             \
             """
         )
+        parser.add_argument(
+            '--coding',
+            type=str,
+            default='khot',
+            help="""\
+            one hot encoding: onehot or k hot encoding: khot
+            \
+            """
+        )
+        parser.add_argument(
+            '--feature_parameter_file',
+            type=dict,
+            default="./parameters/feature_parameters.json",
+            help="""\
+            feature parameters file
+            \
+            """
+        )
         FLAGS, unparsed = parser.parse_known_args()
 
         # define an objective function
@@ -135,7 +153,7 @@ class MyTestCase(unittest.TestCase):
         space = {'lr': hp.choice('lr', [0.0001, 0.001, 0.005, 0.01, 0.1]),
                  'num_second_last_layer': hp.choice('num_second_last_layer', [16, 64, 128, 256, 512, 1024]),
                  'drop_out_rate': hp.choice('drop_out_rate', [0.1, 0.3, 0.5, 0.7, 0.9]),
-                 'batch_size': hp.choice('batch_size', [64, 128, 256, 512])}
+                 'batch_size': hp.choice('batch_size', [64, 128, 256])}
 
         # minimize the objective over the space
         best = fmin(objective, space, algo=tpe.suggest, max_evals=100)

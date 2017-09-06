@@ -458,7 +458,7 @@ class LearnerInceptionV3(Learner):
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
                 epochs=10,
-                callbacks=[tensorboard, model_check_point],
+                #callbacks=[], # tensorboard, model_check_point
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
                 validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size),
