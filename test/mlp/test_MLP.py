@@ -153,7 +153,7 @@ def main():
     # dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS,
     #                                   preprocessing_methods=['mel'], normalization=True)
     dataset = Dataset_Youtube8M(dataset_dir=YOUTUBE_DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'], normalization=True)
-    learner = LearnerMLP(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
+    learner = LearnerMLP(dataset=dataset, learner_name='MLP', flag=FLAGS)
     evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list,
                                                              time_resolution=FLAGS.time_resolution)
 

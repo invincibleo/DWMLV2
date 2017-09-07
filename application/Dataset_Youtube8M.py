@@ -184,7 +184,7 @@ class Dataset_Youtube8M(Dataset):
 
         # normalization, val and test set using training mean and training std
         if self.normalization:
-            mean_std_file_addr = os.path.join(self.feature_dir, 'mean_std_time_res' + str(self.FLAGS.time_resolution))
+            mean_std_file_addr = os.path.join(self.feature_dir, 'mean_std_time_res' + str(self.FLAGS.time_resolution) + '.json')
             if not tf.gfile.Exists(mean_std_file_addr):
                 feature_buf = []
                 batch_count = 0
@@ -201,9 +201,12 @@ class Dataset_Youtube8M(Dataset):
                         self.online_mean_variance(feature_buf)
                         feature_buf = []
                         batch_count = 0
-                pickle.dump((self.training_mean, self.training_std), open(mean_std_file_addr, 'wb'), 2)
+                json.dump(obj=dict({'training_mean': self.training_mean.tolist(), 'training_std': self.training_std.tolist()}),
+                          fp=open(mean_std_file_addr, 'wb'))
             else:
-                self.training_mean, self.training_std = pickle.load(open(mean_std_file_addr, 'rb'))
+                training_statistics = json.load(open(mean_std_file_addr, 'r'))
+                self.training_mean = np.reshape(training_statistics['training_mean'], (1, -1))
+                self.training_std = np.reshape(training_statistics['training_std'], (1, -1))
 
         # count data point
         self.num_training_data = len(data_list['training'])

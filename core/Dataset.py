@@ -60,9 +60,10 @@ class Dataset(object):
                                                    'timeRes-' + str(self.FLAGS.time_resolution) + '-' + hash_parameters)
         feature_parameter_file_name = 'feature_parameters.json'
         tf.gfile.MakeDirs(feature_with_parameters_dir)
-        tf.gfile.Copy(oldpath=os.path.join(self.feature_parameter_dir, feature_parameter_file_name),
-                      newpath=os.path.join(feature_with_parameters_dir, feature_parameter_file_name),
-                      overwrite=True)
+        if not tf.gfile.Exists(os.path.join(feature_with_parameters_dir, feature_parameter_file_name)):
+            tf.gfile.Copy(oldpath=os.path.join(self.feature_parameter_dir, feature_parameter_file_name),
+                          newpath=os.path.join(feature_with_parameters_dir, feature_parameter_file_name),
+                          overwrite=True)
         return os.path.join(feature_with_parameters_dir, sub_dir, data_name.split('.')[0] + '.pickle')
 
     def online_mean_variance(self, new_batch_data):
@@ -105,8 +106,7 @@ class Dataset(object):
                 label_content = data_point.label_content
                 feature_idx = data_point.feature_idx
 
-                feature_file_addr = os.path.join(self.feature_dir, 'time_res' + str(self.FLAGS.time_resolution),
-                                                 sub_dir, data_name.split('.')[0] + '.pickle')
+                feature_file_addr = self.get_feature_file_addr(sub_dir=sub_dir, data_name=data_name)
                 features = pickle.load(open(feature_file_addr, 'rb'))
 
                 feature = features[feature_idx]
@@ -149,8 +149,8 @@ class Dataset(object):
                 label_content = data_point.label_content
                 feature_idx = data_point.feature_idx
 
-                feature_file_addr = os.path.join(self.feature_dir, 'time_res' + str(self.FLAGS.time_resolution),
-                                                 sub_dir, data_name.split('.')[0] + '.pickle')
+                feature_file_addr = self.get_feature_file_addr(sub_dir=sub_dir, data_name=data_name)
+
                 features = pickle.load(open(feature_file_addr, 'rb'))
 
                 feature = features[feature_idx]
