@@ -86,7 +86,7 @@ class Dataset_Youtube8M(Dataset):
                     features = {}
                 else:
                     save_features = False
-                    features = pickle.load(open(feature_file_addr, 'rb'))
+                    # features = pickle.load(open(feature_file_addr, 'rb'))
 
                 if self.if_second_level_labels:
                     label_name = self.data_list_meta[audio_file.split('.')[0]]
@@ -197,10 +197,11 @@ class Dataset_Youtube8M(Dataset):
 
                     feature_buf.append(features[feature_idx])
                     batch_count += 1
-                    if batch_count >= 1024:
+                    if batch_count >= 512:
                         self.online_mean_variance(feature_buf)
                         feature_buf = []
                         batch_count = 0
+
                 json.dump(obj=dict({'training_mean': self.training_mean.tolist(), 'training_std': self.training_std.tolist()}),
                           fp=open(mean_std_file_addr, 'wb'))
             else:

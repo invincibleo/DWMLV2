@@ -35,6 +35,7 @@ class Dataset(object):
         self.num_training_data = kwargs.get('num_training_data', 0)
         self.num_validation_data = kwargs.get('num_validation_data', 0)
         self.num_testing_data = kwargs.get('num_testing_data', 0)
+        self.dimension = kwargs.get('dimension', 0)
 
         self.feature_parameter_dir = kwargs.get('feature_parameter_dir', "")
         if self.feature_parameter_dir == "":
@@ -68,16 +69,17 @@ class Dataset(object):
 
     def online_mean_variance(self, new_batch_data):
         self.num_training_data = 0
-        mean = np.zeros((1, np.shape(new_batch_data)[2]))
-        M2 = np.zeros((1, np.shape(new_batch_data)[2]))
+        mean = np.zeros((1, self.dimension)) #np.shape(new_batch_data)[2])
+        M2 = np.zeros((1, self.dimension))
 
         for data_point in new_batch_data:
-            x = data_point
-            self.num_training_data += 1
-            delta = x - mean
-            mean += delta / self.num_training_data
-            delta2 = x - mean
-            M2 += delta * delta2
+            xx = np.reshape(data_point, (-1, self.dimension))   #data_point
+            for x in xx:
+                self.num_training_data += 1
+                delta = x - mean
+                mean += delta / self.num_training_data
+                delta2 = x - mean
+                M2 += delta * delta2
 
         self.training_mean = mean
         if self.num_training_data < 2:
@@ -111,8 +113,11 @@ class Dataset(object):
 
                 feature = features[feature_idx]
                 # if normalization then mean and std would not be 0 and 1 separately
+                feature = np.reshape(feature, (-1, self.dimension))
                 feature = (feature - self.training_mean) / self.training_std
+                feature = np.reshape(feature, (1, -1))
                 feature = np.reshape(feature, input_shape)
+
 
                 if not len(X) and not len(Y):
                     X = np.expand_dims(feature, axis=0)
@@ -155,7 +160,9 @@ class Dataset(object):
 
                 feature = features[feature_idx]
                 # if normalization then mean and std would not be 0 and 1 separately
+                feature = np.reshape(feature, (-1, self.dimension))
                 feature = (feature - self.training_mean) / self.training_std
+                feature = np.reshape(feature, (1, -1))
                 feature = np.reshape(feature, input_shape)
 
                 if not len(X) and not len(Y):

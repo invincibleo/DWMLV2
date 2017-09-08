@@ -5,10 +5,13 @@ from hyperopt import fmin, tpe, hp
 
 from application.Dataset_DCASE2017_Task3 import *
 from application.LearnerInceptionV3 import LearnerInceptionV3
+from application.Dataset_Youtube8M import *
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 import datetime
 
 DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/DWML_V2/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development"
+YOUTUBE_DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Leo/Audioset"
+
 class MyTestCase(unittest.TestCase):
     def test_something(self):
         parser = argparse.ArgumentParser()
@@ -93,7 +96,7 @@ class MyTestCase(unittest.TestCase):
         parser.add_argument(
             '--drop_out_rate',
             type=float,
-            default=0.5,
+            default=0.8,
             help="""\
             \
             """
@@ -108,19 +111,20 @@ class MyTestCase(unittest.TestCase):
             """
         )
         parser.add_argument(
-            '--feature_parameter_file',
-            type=dict,
-            default="./parameters/feature_parameters.json",
+            '--parameter_dir',
+            type=str,
+            default="parameters",
             help="""\
-            feature parameters file
+            parameter folder
             \
             """
         )
-
         FLAGS, unparsed = parser.parse_known_args()
 
 
         dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'], normalization=True, dimension=40)
+        # dataset = Dataset_Youtube8M(dataset_dir=YOUTUBE_DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'],
+        #                             normalization=True, dimension=40)
         learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
         evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
 
@@ -137,8 +141,10 @@ class MyTestCase(unittest.TestCase):
         current_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         if not tf.gfile.Exists(results_dir_addr):
             tf.gfile.MakeDirs(results_dir_addr)
-            pickle.dump(results, open(results_dir_addr + 'results_' + current_time_str + '.pickle', 'wb'), 2)
-            with open(results_dir_addr + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
+            hash_FLAGS = hashlib.sha1(str(FLAGS)).hexdigest()
+            results_file_dir = os.path.join(results_dir_addr, dataset.dataset_name, hash_FLAGS)
+            json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
+            with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
                 f.write(str(FLAGS))
 
 if __name__ == '__main__':

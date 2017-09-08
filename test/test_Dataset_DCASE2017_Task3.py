@@ -109,11 +109,11 @@ class MyTestCase(unittest.TestCase):
             """
         )
         parser.add_argument(
-            '--feature_parameter_file',
-            type=dict,
-            default="./parameters/feature_parameters.json",
+            '--parameter_dir',
+            type=str,
+            default="parameters",
             help="""\
-            feature parameters file
+            parameter folder
             \
             """
         )
@@ -143,8 +143,10 @@ class MyTestCase(unittest.TestCase):
             current_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
             if not tf.gfile.Exists(results_dir_addr):
                 tf.gfile.MakeDirs(results_dir_addr)
-                pickle.dump(results, open(results_dir_addr + 'results_' + current_time_str + '.pickle', 'wb'), 2)
-                with open(results_dir_addr + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
+                hash_FLAGS = hashlib.sha1(str(FLAGS)).hexdigest()
+                results_file_dir = os.path.join(results_dir_addr, dataset.dataset_name, hash_FLAGS)
+                json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
+                with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
                     f.write(str(FLAGS))
 
             # return {'F score': results['class_wise_average']['F'], 'Error Rate': results['class_wise_average']['ER']}

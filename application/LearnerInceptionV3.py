@@ -94,11 +94,11 @@ def conv2d_bn(x,
         filters, (num_row, num_col),
         strides=strides,
         padding=padding,
-        use_bias=True,
+        use_bias=False,
         kernel_initializer=keras.initializers.he_uniform(),
-        bias_initializer=keras.initializers.Zeros(),
+        # bias_initializer=keras.initializers.Zeros(),
         name=conv_name)(x)
-    x = BatchNormalization(axis=bn_axis, scale=False, name=bn_name)(x)
+    x = BatchNormalization(axis=bn_axis, scale=True, name=bn_name)(x)
     x = Activation('relu', name=name)(x)
     return x
 
@@ -457,8 +457,8 @@ class LearnerInceptionV3(Learner):
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
-                epochs=10,
-                #callbacks=[], # tensorboard, model_check_point
+                epochs=200,
+                callbacks=[tensorboard], # tensorboard, model_check_point
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
                 validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size),
