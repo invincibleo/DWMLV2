@@ -49,6 +49,7 @@ class Dataset(object):
             self.feature_dir = os.path.join('tmp/feature/', self.dataset_name)
 
 
+
     def get_dataset_file_addr(self):
         file_name = "coding-" + self.FLAGS.coding + "_timeRes-" + str(self.FLAGS.time_resolution) + ".pickle"
         if not tf.gfile.Exists(self.dataset_list_dir):
@@ -86,6 +87,39 @@ class Dataset(object):
             self.training_std = float('nan')
         else:
             self.training_std = np.sqrt(M2 / self.num_training_data)
+
+    def get_data_list_total_num_classes(self, data_list):
+        class_count_buf_orign = np.zeros(data_list[0].label_content.shape)
+        none_class_count = 0
+        for data_point in data_list:
+            label_content = data_point.label_content
+            class_count_buf_orign += label_content
+            if np.sum(label_content, axis=-1) == 0:
+                none_class_count += 1
+
+        max_class_num = np.max(class_count_buf_orign, axis=-1)
+        num_to_add = max_class_num - class_count_buf_orign
+        data_list_buf = data_list
+        while(True):
+            rand_idx = np.random.choice(len(data_list))
+            data_point = data_list[rand_idx]
+            label_content = data_point.label_content
+            if not np.sum(label_content, axis=-1) == 0 and np.sum(np.sign(num_to_add[label_content == 1])) > 0:
+                data_list_buf.append(data_point)
+                num_to_add -= label_content
+
+            if np.abs(np.std(num_to_add, axis=-1)) <= 200:
+                break
+
+        none_class_count = 0
+        class_count_buf = np.zeros(data_list[0].label_content.shape)
+        for data_point in data_list_buf:
+            label_content = data_point.label_content
+            class_count_buf += label_content
+            if np.sum(label_content, axis=-1) == 0:
+                none_class_count += 1
+
+        return data_list_buf, class_count_buf_orign, none_class_count, class_count_buf
 
     def generate_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
         X = []

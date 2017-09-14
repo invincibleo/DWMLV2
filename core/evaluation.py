@@ -382,7 +382,7 @@ class DCASE2016_EventDetection_SegmentBasedMetrics(EventDetectionMetrics):
 
         # system_event_roll = numpy.round(system_output)
         system_event_roll = numpy.zeros(system_output.shape)
-        system_event_roll[system_output >= threshold] = 1
+        system_event_roll[system_output >= threshold] = int(1)
         annotated_event_roll = annotated_ground_truth
 
         # Fix durations of both event_rolls to be equal

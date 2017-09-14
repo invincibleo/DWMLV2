@@ -13,9 +13,17 @@ from __future__ import print_function
 import keras
 import tensorflow as tf
 import numpy as np
+from keras import backend as K
 
 def top3_accuracy(y_true, y_pred):
     return keras.metrics.top_k_categorical_accuracy(y_true, y_pred, k=3)
+
+def sound_event_er(y_true, y_pred):
+    K.round()
+    K.greater_equal(y_pred, 0.8)
+    K.get_value()
+    K.set_value()
+    return
 
 def apk(actual, predicted):
     """
