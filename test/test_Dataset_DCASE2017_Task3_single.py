@@ -125,6 +125,8 @@ class MyTestCase(unittest.TestCase):
         dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'], normalization=True, dimension=40)
         # dataset = Dataset_Youtube8M(dataset_dir=YOUTUBE_DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'],
         #                             normalization=True, dimension=40)
+        dataset.data_list['training'], _, _, _ = dataset.get_data_list_total_num_classes(dataset.data_list['training'])
+        dataset.num_training_data = len(dataset.data_list['training'])
         learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
         evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
 
@@ -143,6 +145,7 @@ class MyTestCase(unittest.TestCase):
             tf.gfile.MakeDirs(results_dir_addr)
             hash_FLAGS = hashlib.sha1(str(FLAGS)).hexdigest()
             results_file_dir = os.path.join(results_dir_addr, dataset.dataset_name, hash_FLAGS)
+            tf.gfile.MakeDirs(results_file_dir)
             json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
             with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
                 f.write(str(FLAGS))
