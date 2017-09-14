@@ -97,8 +97,9 @@ def conv2d_bn(x,
         use_bias=False,
         kernel_initializer=keras.initializers.he_uniform(),
         # bias_initializer=keras.initializers.Zeros(),
+        kernel_regularizer=keras.regularizers.l2(0.01),
         name=conv_name)(x)
-    x = BatchNormalization(axis=bn_axis, scale=True, name=bn_name)(x)
+    x = BatchNormalization(axis=bn_axis, center=True, scale=False, name=bn_name)(x)
     x = Activation('relu', name=name)(x)
     return x
 
@@ -359,13 +360,17 @@ def InceptionV3(include_top=True,
     if include_top:
         # Classification block
         x = GlobalAveragePooling2D(name='avg_pool')(x)
-        x = Dense(num_second_last_layer, activation='relu', use_bias=True,
+        x = Dense(num_second_last_layer, activation=None, use_bias=False,
                   kernel_initializer=keras.initializers.he_uniform(),
-                  bias_initializer=keras.initializers.zeros(), name='2ndLastPrediction')(x)   #####change softmax to sigmoid
+                  kernel_regularizer=keras.regularizers.l2(0.01), name='2ndLastPrediction')(x)   #####change softmax to sigmoid
+        x = BatchNormalization(axis=-1, scale=False)(x)    #channel last axis=3
+        x = Activation('relu')(x)
         x = Dropout(rate=drop_out_rate)(x)   ####### added by me
-        x = Dense(classes, activation='sigmoid', use_bias=True,
+        x = Dense(classes, activation=None, use_bias=False,
                   kernel_initializer=keras.initializers.he_uniform(),
-                  bias_initializer=keras.initializers.zeros(), name='predictions')(x)   #####change softmax to sigmoid
+                  kernel_regularizer=keras.regularizers.l2(0.01), name='predictions')(x)
+        x = BatchNormalization(axis=-1, scale=True)(x)    #channel last axis=3
+        x = Activation('sigmoid')(x)
 
     else:
         if pooling == 'avg':
@@ -416,7 +421,7 @@ class LearnerInceptionV3(Learner):
         model_json_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.json"
         model_h5_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.h5"
 
-        continue_training = False
+        continue_training = True
         if not os.path.exists(model_json_file_addr) or continue_training:
 
             if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
@@ -424,8 +429,6 @@ class LearnerInceptionV3(Learner):
                 os.makedirs('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/')
                 shutil.copytree('../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
 
-            # model = Sequential()
-            # model.add(Dense(43, input_dim=96*20, activation='sigmoid'))#InceptionV3(weights=None, classes=527)
             num_classes = self.dataset.num_classes
             time_length = int(self.FLAGS.time_resolution/0.02) + 1
             input_shape = (time_length, 40, 1)
@@ -442,7 +445,7 @@ class LearnerInceptionV3(Learner):
             model.compile(loss='categorical_crossentropy',
                           optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate,
                                                           beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
-                          metrics=['categorical_accuracy', top3_accuracy, 'top_k_categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
+                          metrics=['binary_accuracy', 'categorical_accuracy', top3_accuracy, 'top_k_categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
 
             # if tf.gfile.Exists('tmp/logs/tensorboard/' + str(self.hash_name_hashed)):
             #     shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
@@ -457,7 +460,7 @@ class LearnerInceptionV3(Learner):
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
-                epochs=200,
+                epochs=100,
                 callbacks=[tensorboard], # tensorboard, model_check_point
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),

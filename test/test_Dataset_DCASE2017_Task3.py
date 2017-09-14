@@ -145,6 +145,7 @@ class MyTestCase(unittest.TestCase):
                 tf.gfile.MakeDirs(results_dir_addr)
                 hash_FLAGS = hashlib.sha1(str(FLAGS)).hexdigest()
                 results_file_dir = os.path.join(results_dir_addr, dataset.dataset_name, hash_FLAGS)
+                tf.gfile.MakeDirs(results_file_dir)
                 json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
                 with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
                     f.write(str(FLAGS))

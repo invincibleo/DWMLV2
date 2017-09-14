@@ -52,7 +52,7 @@ class LearnerMLP(Learner):
             model.compile(loss='categorical_crossentropy',
                           optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate,
                                                           beta_1=0.9, beta_2=0.999, epsilon=1e-08),
-                          metrics=['categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
+                          metrics=['categorical_accuracy', sound_event_er])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
 
             if tf.gfile.Exists('tmp/logs/tensorboard/' + str(self.hash_name_hashed)):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
@@ -131,6 +131,8 @@ class LearnerMLP(Learner):
         model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
         print("Loaded model from disk")
 
-        (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing', batch_size=500, input_shape=input_shape)
+        (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing',
+                                                              batch_size=self.dataset.num_testing_data,
+                                                              input_shape=input_shape)
         predictions = model.predict_on_batch(X)
         return Y, predictions
