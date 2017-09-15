@@ -354,7 +354,7 @@ class DCASE2016_EventDetection_SegmentBasedMetrics(EventDetectionMetrics):
         # Finalize evaluation and return results
         return self.results()
 
-    def evaluate(self, annotated_ground_truth, system_output, threshold):
+    def evaluate(self, annotated_ground_truth, system_output, threshold=None):
         """Evaluate system output and annotated ground truth pair.
 
         Use results method to get results.
@@ -381,6 +381,9 @@ class DCASE2016_EventDetection_SegmentBasedMetrics(EventDetectionMetrics):
         # annotated_event_roll = numpy.squeeze(annotated_ground_truth, axis=1)
 
         # system_event_roll = numpy.round(system_output)
+        if threshold is None:
+            threshold = numpy.mean(numpy.mean(system_output, axis=-1), axis=-1)
+
         system_event_roll = numpy.zeros(system_output.shape)
         system_event_roll[system_output >= threshold] = int(1)
         annotated_event_roll = annotated_ground_truth

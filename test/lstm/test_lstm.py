@@ -158,7 +158,7 @@ def main():
 
     learner.learn()
     truth, prediction = learner.predict()
-    evaluator.evaluate(truth, prediction, threshold=0.8)
+    evaluator.evaluate(truth, prediction, threshold=0.1)
     results = evaluator.results()
     print('F:' + str(results['class_wise_average']['F']) + '\n')
     print('ER' + str(results['class_wise_average']['ER']) + '\n')

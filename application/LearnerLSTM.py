@@ -46,9 +46,8 @@ class LearnerLSTM(Learner):
             model = Sequential()
             model.add(LSTM(32, return_sequences=True, input_shape=input_shape))  # returns a sequence of vectors of dimension 32
             model.add(LSTM(32, return_sequences=True))  # returns a sequence of vectors of dimension 32
-            model.add(LSTM(32))  # return a single vector of dimension 32
+            model.add(LSTM(32, dropout=0.5))  # return a single vector of dimension 32
             model.add(Dense(num_classes, activation='sigmoid',
-                            kernel_regularizer=keras.regularizers.l2(0.01),
                             kernel_initializer=keras.initializers.he_normal(),
                             bias_initializer=keras.initializers.zeros()))
 
@@ -75,7 +74,7 @@ class LearnerLSTM(Learner):
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
-                epochs=50,
+                epochs=25,
                 callbacks=[tensorboard, model_check_point],
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
@@ -112,7 +111,7 @@ class LearnerLSTM(Learner):
     def predict(self):
         num_classes = self.dataset.num_classes
         time_length = int(self.FLAGS.time_resolution / 0.02) + 1
-        input_shape = (time_length * 40,)
+        input_shape = (time_length, 40)
 
         # load json and create model
         json_file = open("tmp/model/" + self.hash_name_hashed + "/model.json", 'r')
