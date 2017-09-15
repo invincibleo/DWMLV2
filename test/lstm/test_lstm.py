@@ -16,11 +16,10 @@ import datetime
 
 from application.Dataset_DCASE2017_Task3 import *
 from application.Dataset_Youtube8M import *
-from application.LearnerMLP import LearnerMLP
+from application.LearnerLSTM import LearnerLSTM
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 
-DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/DWML_V2/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development"
-YOUTUBE_DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Leo/Audioset"
+DATASET_DIR = "/Users/invincibleo/Box Sync/PhD/Experiment/DWML_V2/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development"
 
 def _setup_keras():
     """Setup keras backend and parameters
@@ -99,7 +98,7 @@ def main():
     parser.add_argument(
         '--time_resolution',
         type=float,
-        default=1,
+        default=0.5,
         help="""\
         The hop of the FFT in sec.\
         """
@@ -123,7 +122,7 @@ def main():
     parser.add_argument(
         '--drop_out_rate',
         type=float,
-        default=0.5,
+        default=0.8,
         help="""\
         \
         """
@@ -150,10 +149,10 @@ def main():
 
     _setup_keras()
 
-    dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS,
-                                      preprocessing_methods=['mel'], normalization=True, dimension=40)
-    # dataset = Dataset_Youtube8M(dataset_dir=YOUTUBE_DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'], normalization=True)
-    learner = LearnerMLP(dataset=dataset, learner_name='MLP', flag=FLAGS)
+    dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'],
+                                      normalization=True, dimension=40)
+    dataset.data_list['training'], _, _, _ = dataset.get_data_list_total_num_classes(dataset.data_list['training'])
+    learner = LearnerLSTM(dataset=dataset, learner_name='LSTM', flag=FLAGS)
     evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list,
                                                              time_resolution=FLAGS.time_resolution)
 
