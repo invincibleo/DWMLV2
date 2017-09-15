@@ -367,8 +367,7 @@ def InceptionV3(include_top=True,
         x = Activation('relu')(x)
         x = Dropout(rate=drop_out_rate)(x)   ####### added by me
         x = Dense(classes, activation=None, use_bias=False,
-                  kernel_initializer=keras.initializers.he_uniform(),
-                  kernel_regularizer=keras.regularizers.l2(0.01), name='predictions')(x)
+                  kernel_initializer=keras.initializers.he_uniform(), name='predictions')(x)
         x = BatchNormalization(axis=-1, scale=True)(x)    #channel last axis=3
         x = Activation('sigmoid')(x)
 
@@ -460,7 +459,7 @@ class LearnerInceptionV3(Learner):
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
-                epochs=100,
+                epochs=10,
                 callbacks=[tensorboard], # tensorboard, model_check_point
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
