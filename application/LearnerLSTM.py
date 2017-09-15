@@ -30,7 +30,8 @@ class LearnerLSTM(Learner):
         model_json_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.json"
         model_h5_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.h5"
 
-        if not os.path.exists(model_json_file_addr):
+        continue_training = False
+        if not os.path.exists(model_json_file_addr) or continue_training:
 
             if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
                 os.makedirs("tmp/model/" + str(self.hash_name_hashed))
@@ -39,7 +40,7 @@ class LearnerLSTM(Learner):
 
             num_classes = self.dataset.num_classes
             time_length = int(self.FLAGS.time_resolution/0.02) + 1
-            input_shape = (time_length, -1)
+            input_shape = (time_length, 40)
 
             # expected input data shape: (batch_size, timesteps, data_dim)
             model = Sequential()
@@ -50,6 +51,10 @@ class LearnerLSTM(Learner):
                             kernel_regularizer=keras.regularizers.l2(0.01),
                             kernel_initializer=keras.initializers.he_normal(),
                             bias_initializer=keras.initializers.zeros()))
+
+            if continue_training:
+                # load weights into new model
+                model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
 
             # Compile model
             model.compile(loss='categorical_crossentropy',
@@ -62,7 +67,7 @@ class LearnerLSTM(Learner):
 
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
-                histogram_freq=10, write_graph=True, write_images=True, write_grads=True, batch_size=100)
+                histogram_freq=10, write_graph=True, write_images=True)
 
             model_check_point = keras.callbacks.ModelCheckpoint('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5', save_best_only=True, save_weights_only=True, mode='min')
 
