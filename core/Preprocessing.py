@@ -293,9 +293,13 @@ class Preprocessing(object):
 
 
     @staticmethod
-    def audio_event_roll(meta_file, label_list, time_resolution):
-        meta_file_content = GeneralFileAccessor(file_path=meta_file).read()
-        end_times = numpy.array([float(x[1]) for x in meta_file_content])
+    def audio_event_roll(meta_file=None, meta_content=None, label_list=[], time_resolution=0.04):
+        if meta_content is None:
+            meta_file_content = GeneralFileAccessor(file_path=meta_file).read()
+        elif meta_file is None:
+            meta_file_content = list(meta_content)
+
+        end_times = numpy.array([float(x[-2]) for x in meta_file_content])
         max_offset_value = numpy.max(end_times, 0)
 
         event_roll = numpy.zeros((int(math.floor(max_offset_value / time_resolution)), len(label_list)))
@@ -305,8 +309,8 @@ class Preprocessing(object):
         for line in meta_file_content:
             label_name = line[-1]
             label_idx = label_list.index(label_name)
-            event_start = float(line[0])
-            event_end = float(line[1])
+            event_start = float(line[-3])
+            event_end = float(line[-2])
 
             onset = int(math.floor(event_start / time_resolution))
             offset = int(math.floor(event_end / time_resolution))

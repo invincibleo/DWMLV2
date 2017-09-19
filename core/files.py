@@ -629,9 +629,7 @@ class ListFile(list, FileMixin):
             if self.format == 'txt':
                 with open(self.filename, 'r') as f:
                     lines = f.readlines()
-                    # Remove line breaks
-                    for i in range(0, len(lines)):
-                        lines[i] = lines[i].replace('\n', '')
+                    lines = [re.sub(r'[\n\r]', '', x).split('\t') for x in lines]
                     list.__init__(self, lines)
             elif self.format == 'ann':
                 with open(self.filename, 'r') as f:

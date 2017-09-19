@@ -15,7 +15,7 @@ import json
 import hashlib
 import tensorflow as tf
 import numpy as np
-
+import tqdm
 
 class Dataset(object):
 
@@ -87,6 +87,40 @@ class Dataset(object):
             self.training_std = float('nan')
         else:
             self.training_std = np.sqrt(M2 / self.num_training_data)
+
+    def count_sets_data(self):
+        # count data point
+        self.num_training_data = len(self.data_list['training'])
+        self.num_validation_data = len(self.data_list['validation'])
+        self.num_testing_data = len(self.data_list['testing'])
+
+    def dataset_normalization(self):
+        # normalization, val and test set using training mean and training std
+        mean_std_file_addr = os.path.join(self.feature_dir, 'mean_std_time_res' + str(self.FLAGS.time_resolution) + '.json')
+        if not tf.gfile.Exists(mean_std_file_addr):
+            feature_buf = []
+            batch_count = 0
+            for training_point in tqdm(self.data_list['training'], desc='Computing training set mean and std'):
+                feature_idx = training_point.feature_idx
+                data_name = training_point.data_name
+                sub_dir = training_point.sub_dir
+                feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
+                features = pickle.load(open(feature_file_addr, 'rb'))
+
+                feature_buf.append(features[feature_idx])
+                batch_count += 1
+                if batch_count >= 128:
+                    self.online_mean_variance(feature_buf)
+                    feature_buf = []
+                    batch_count = 0
+
+            json.dump(obj=dict(
+                {'training_mean': self.training_mean.tolist(), 'training_std': self.training_std.tolist()}),
+                      fp=open(mean_std_file_addr, 'wb'))
+        else:
+            training_statistics = json.load(open(mean_std_file_addr, 'r'))
+            self.training_mean = np.reshape(training_statistics['training_mean'], (1, -1))
+            self.training_std = np.reshape(training_statistics['training_std'], (1, -1))
 
     def get_data_list_total_num_classes(self, data_list):
         class_count_buf_orign = np.zeros(data_list[0].label_content.shape)

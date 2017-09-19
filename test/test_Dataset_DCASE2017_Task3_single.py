@@ -96,7 +96,7 @@ class MyTestCase(unittest.TestCase):
         parser.add_argument(
             '--drop_out_rate',
             type=float,
-            default=0.8,
+            default=0.9,
             help="""\
             \
             """
@@ -133,7 +133,7 @@ class MyTestCase(unittest.TestCase):
 
         learner.learn()
         truth, prediction = learner.predict()
-        evaluator.evaluate(truth, prediction, threshold=0.8)
+        evaluator.evaluate(truth, prediction)
         results = evaluator.results()
         print('F:' + str(results['class_wise_average']['F']) + '\n')
         print('ER' + str(results['class_wise_average']['ER']) + '\n')

@@ -97,7 +97,7 @@ def conv2d_bn(x,
         use_bias=False,
         kernel_initializer=keras.initializers.he_uniform(),
         # bias_initializer=keras.initializers.Zeros(),
-        kernel_regularizer=keras.regularizers.l2(0.01),
+        # kernel_regularizer=keras.regularizers.l2(0.001),
         name=conv_name)(x)
     x = BatchNormalization(axis=bn_axis, center=True, scale=False, name=bn_name)(x)
     x = Activation('relu', name=name)(x)
@@ -362,7 +362,7 @@ def InceptionV3(include_top=True,
         x = GlobalAveragePooling2D(name='avg_pool')(x)
         x = Dense(num_second_last_layer, activation=None, use_bias=False,
                   kernel_initializer=keras.initializers.he_uniform(),
-                  kernel_regularizer=keras.regularizers.l2(0.01), name='2ndLastPrediction')(x)   #####change softmax to sigmoid
+                  kernel_regularizer=keras.regularizers.l2(0.005), name='2ndLastPrediction')(x)   #####change softmax to sigmoid
         x = BatchNormalization(axis=-1, scale=False)(x)    #channel last axis=3
         x = Activation('relu')(x)
         x = Dropout(rate=drop_out_rate)(x)   ####### added by me
@@ -459,7 +459,7 @@ class LearnerInceptionV3(Learner):
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
-                epochs=10,
+                epochs=90,
                 callbacks=[tensorboard], # tensorboard, model_check_point
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
