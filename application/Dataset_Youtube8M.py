@@ -40,6 +40,11 @@ class Dataset_Youtube8M(Dataset):
         self.extensions = ['wav']
         self.data_list = self.create_data_list()
 
+        if self.normalization:
+            self.dataset_normalization()
+
+        self.count_sets_data()
+
     def get_label_list(self):
         ontology_file_addr = os.path.join(self.FLAGS.parameter_dir, 'ontology.json')
 

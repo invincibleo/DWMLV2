@@ -42,6 +42,8 @@ class Dataset_DCASE2017_Task3(Dataset):
         else:
             self.data_list = self.create_data_list_by_file()
 
+        self.data_list['training'], _, _, _ = self.balance_data_list(self.data_list['training'])
+
         if self.normalization:
             self.dataset_normalization()
 
@@ -175,6 +177,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                         meta_file_content = np.array(GeneralFileAccessor(file_path=meta_file_addr).read())
                         audio_file_list = set(meta_file_content[:, 0])
                         for audio_file in audio_file_list:
+                            audio_file_name = audio_file.split('.')[0].split('/')[-1]
                             audio_meta_file_content = meta_file_content[meta_file_content[:, 0] == audio_file]
                             audio_file_addr = os.path.join(self.dataset_dir, audio_file)
                             audio_raw_all, fs = GeneralFileAccessor(file_path=audio_file_addr,
@@ -183,7 +186,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                                                                         time_resolution=self.FLAGS.time_resolution,
                                                                         label_list=self.label_list)
 
-                            feature_file_addr = self.get_feature_file_addr('street', audio_file.split('.')[0].split('/')[-1])
+                            feature_file_addr = self.get_feature_file_addr('street', audio_file_name)
                             if not tf.gfile.Exists(feature_file_addr):
                                 feature_base_addr = '/'.join(feature_file_addr.split('/')[:-1])
                                 if not tf.gfile.Exists(feature_base_addr):
@@ -198,7 +201,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                                 start_time = point_idx * self.FLAGS.time_resolution
                                 end_time = (point_idx + 1) * self.FLAGS.time_resolution
                                 new_point = AudioPoint(
-                                    data_name=audio_file + '.wav',
+                                    data_name=audio_file_name + '.wav',
                                     sub_dir='street',
                                     label_name=label_name,
                                     label_content=np.reshape(event_roll[point_idx], (1, -1)),
@@ -244,7 +247,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                                 start_time = point_idx * self.FLAGS.time_resolution
                                 end_time = (point_idx + 1) * self.FLAGS.time_resolution
                                 new_point = AudioPoint(
-                                    data_name=audio_file + '.wav',
+                                    data_name=audio_file_name + '.wav',
                                     sub_dir='street',
                                     label_name=label_name,
                                     label_content=np.reshape(event_roll[point_idx], (1, -1)),

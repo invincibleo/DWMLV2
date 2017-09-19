@@ -97,7 +97,7 @@ def conv2d_bn(x,
         use_bias=False,
         kernel_initializer=keras.initializers.he_uniform(),
         # bias_initializer=keras.initializers.Zeros(),
-        # kernel_regularizer=keras.regularizers.l2(0.001),
+        kernel_regularizer=keras.regularizers.l2(0.0001),
         name=conv_name)(x)
     x = BatchNormalization(axis=bn_axis, center=True, scale=False, name=bn_name)(x)
     x = Activation('relu', name=name)(x)
@@ -173,7 +173,6 @@ def InceptionV3(include_top=True,
     #     min_size=139,
     #     data_format=K.image_data_format(),
     #     include_top=include_top)
-    # input_shape = (101, 40, 1)
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)
@@ -360,12 +359,12 @@ def InceptionV3(include_top=True,
     if include_top:
         # Classification block
         x = GlobalAveragePooling2D(name='avg_pool')(x)
-        x = Dense(num_second_last_layer, activation=None, use_bias=False,
-                  kernel_initializer=keras.initializers.he_uniform(),
-                  kernel_regularizer=keras.regularizers.l2(0.005), name='2ndLastPrediction')(x)   #####change softmax to sigmoid
-        x = BatchNormalization(axis=-1, scale=False)(x)    #channel last axis=3
-        x = Activation('relu')(x)
-        x = Dropout(rate=drop_out_rate)(x)   ####### added by me
+        # x = Dense(num_second_last_layer, activation=None, use_bias=False,
+        #           kernel_initializer=keras.initializers.he_uniform(),
+        #           kernel_regularizer=keras.regularizers.l2(0.005), name='2ndLastPrediction')(x)   #####change softmax to sigmoid
+        # x = BatchNormalization(axis=-1, scale=False)(x)    #channel last axis=3
+        # x = Activation('relu')(x)
+        # x = Dropout(rate=drop_out_rate)(x)   ####### added by me
         x = Dense(classes, activation=None, use_bias=False,
                   kernel_initializer=keras.initializers.he_uniform(), name='predictions')(x)
         x = BatchNormalization(axis=-1, scale=True)(x)    #channel last axis=3
@@ -420,7 +419,7 @@ class LearnerInceptionV3(Learner):
         model_json_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.json"
         model_h5_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.h5"
 
-        continue_training = True
+        continue_training = False
         if not os.path.exists(model_json_file_addr) or continue_training:
 
             if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
@@ -459,7 +458,7 @@ class LearnerInceptionV3(Learner):
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
-                epochs=90,
+                epochs=17,
                 callbacks=[tensorboard], # tensorboard, model_check_point
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),

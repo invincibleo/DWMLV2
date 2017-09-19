@@ -40,7 +40,7 @@ class LearnerMLP(Learner):
             # model.add(Dense(43, input_dim=96*20, activation='sigmoid'))#InceptionV3(weights=None, classes=527)
             num_classes = self.dataset.num_classes
             time_length = int(self.FLAGS.time_resolution/0.02) + 1
-            input_shape = (time_length*40,)
+            input_shape = (150*150*40,)#(time_length*40,)
             model = Sequential()
             model.add(Dense(50, input_shape=input_shape, activation='relu'))
             model.add(Dropout(0.2))
@@ -52,7 +52,7 @@ class LearnerMLP(Learner):
             model.compile(loss='categorical_crossentropy',
                           optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate,
                                                           beta_1=0.9, beta_2=0.999, epsilon=1e-08),
-                          metrics=['categorical_accuracy', sound_event_er])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
+                          metrics=['categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
 
             if tf.gfile.Exists('tmp/logs/tensorboard/' + str(self.hash_name_hashed)):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))

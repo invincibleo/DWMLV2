@@ -15,7 +15,9 @@ import json
 import hashlib
 import tensorflow as tf
 import numpy as np
-import tqdm
+from tqdm import tqdm
+import scipy
+
 
 class Dataset(object):
 
@@ -69,7 +71,6 @@ class Dataset(object):
         return os.path.join(feature_with_parameters_dir, sub_dir, data_name.split('.')[0] + '.pickle')
 
     def online_mean_variance(self, new_batch_data):
-        self.num_training_data = 0
         mean = np.zeros((1, self.dimension)) #np.shape(new_batch_data)[2])
         M2 = np.zeros((1, self.dimension))
 
@@ -98,21 +99,42 @@ class Dataset(object):
         # normalization, val and test set using training mean and training std
         mean_std_file_addr = os.path.join(self.feature_dir, 'mean_std_time_res' + str(self.FLAGS.time_resolution) + '.json')
         if not tf.gfile.Exists(mean_std_file_addr):
-            feature_buf = []
-            batch_count = 0
-            for training_point in tqdm(self.data_list['training'], desc='Computing training set mean and std'):
-                feature_idx = training_point.feature_idx
-                data_name = training_point.data_name
-                sub_dir = training_point.sub_dir
-                feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
-                features = pickle.load(open(feature_file_addr, 'rb'))
+            if False: # predefine for future use to suit for big datasets
+                feature_buf = []
+                batch_count = 0
+                for training_point in tqdm(self.data_list['training'], desc='Computing training set mean and std'):
+                    feature_idx = training_point.feature_idx
+                    data_name = training_point.data_name
+                    sub_dir = training_point.sub_dir
+                    feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
+                    features = pickle.load(open(feature_file_addr, 'rb'))
 
-                feature_buf.append(features[feature_idx])
-                batch_count += 1
-                if batch_count >= 128:
-                    self.online_mean_variance(feature_buf)
-                    feature_buf = []
-                    batch_count = 0
+                    feature_buf.append(features[feature_idx])
+                    batch_count += 1
+                    if batch_count >= 128:
+                        self.online_mean_variance(feature_buf)
+                        feature_buf = []
+                        batch_count = 0
+            else:
+                all_features = dict()
+                feature_buf = []
+                batch_count = 0
+                for training_point in tqdm(self.data_list['training'], desc='Computing training set mean and std'):
+                    feature_idx = training_point.feature_idx
+                    data_name = training_point.data_name
+                    sub_dir = training_point.sub_dir
+                    feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
+
+                    if feature_file_addr not in all_features.keys():
+                        features = pickle.load(open(feature_file_addr, 'rb'))
+                        all_features[feature_file_addr] = features
+
+                    feature_buf.append(all_features[feature_file_addr][feature_idx])
+                    batch_count += 1
+                    if batch_count >= 128:
+                        self.online_mean_variance(feature_buf)
+                        feature_buf = []
+                        batch_count = 0
 
             json.dump(obj=dict(
                 {'training_mean': self.training_mean.tolist(), 'training_std': self.training_std.tolist()}),
@@ -122,7 +144,7 @@ class Dataset(object):
             self.training_mean = np.reshape(training_statistics['training_mean'], (1, -1))
             self.training_std = np.reshape(training_statistics['training_std'], (1, -1))
 
-    def get_data_list_total_num_classes(self, data_list):
+    def balance_data_list(self, data_list):
         class_count_buf_orign = np.zeros(data_list[0].label_content.shape)
         none_class_count = 0
         for data_point in data_list:
@@ -132,6 +154,7 @@ class Dataset(object):
                 none_class_count += 1
 
         max_class_num = np.max(class_count_buf_orign, axis=-1)
+        min_class_num = np.min(class_count_buf_orign, axis=-1)
         num_to_add = max_class_num - class_count_buf_orign
         data_list_buf = data_list
         while(True):
@@ -142,7 +165,7 @@ class Dataset(object):
                 data_list_buf.append(data_point)
                 num_to_add -= label_content
 
-            if np.abs(np.std(num_to_add, axis=-1)) <= 200:
+            if np.abs(np.std(num_to_add, axis=-1)) <= min_class_num:
                 break
 
         none_class_count = 0
@@ -154,7 +177,7 @@ class Dataset(object):
                 none_class_count += 1
 
         self.num_training_data = len(self.data_list['training'])
-
+        print("Class count: " + str(class_count_buf))
         return data_list_buf, class_count_buf_orign, none_class_count, class_count_buf
 
     def generate_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
@@ -185,9 +208,9 @@ class Dataset(object):
                 # if normalization then mean and std would not be 0 and 1 separately
                 feature = np.reshape(feature, (-1, self.dimension))
                 feature = (feature - self.training_mean) / self.training_std
+                # feature = scipy.misc.imresize(feature, input_shape) / 255
                 feature = np.reshape(feature, (1, -1))
                 feature = np.reshape(feature, input_shape)
-
 
                 if not len(X) and not len(Y):
                     X = np.expand_dims(feature, axis=0)
@@ -232,6 +255,7 @@ class Dataset(object):
                 # if normalization then mean and std would not be 0 and 1 separately
                 feature = np.reshape(feature, (-1, self.dimension))
                 feature = (feature - self.training_mean) / self.training_std
+                # feature = scipy.misc.imresize(feature, input_shape)
                 feature = np.reshape(feature, (1, -1))
                 feature = np.reshape(feature, input_shape)
 
