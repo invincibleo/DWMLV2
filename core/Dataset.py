@@ -176,7 +176,6 @@ class Dataset(object):
             if np.sum(label_content, axis=-1) == 0:
                 none_class_count += 1
 
-        self.num_training_data = len(self.data_list['training'])
         print("Class count: " + str(class_count_buf))
         return data_list_buf, class_count_buf_orign, none_class_count, class_count_buf
 

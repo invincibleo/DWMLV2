@@ -42,8 +42,6 @@ class Dataset_DCASE2017_Task3(Dataset):
         else:
             self.data_list = self.create_data_list_by_file()
 
-        self.data_list['training'], _, _, _ = self.balance_data_list(self.data_list['training'])
-
         if self.normalization:
             self.dataset_normalization()
 
@@ -155,6 +153,8 @@ class Dataset_DCASE2017_Task3(Dataset):
 
                 if save_features:
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
+
+            data_list['training'], _, _, _ = self.balance_data_list(data_list['training'])
             pickle.dump(data_list, open(datalist_pickle_file, 'wb'), 2)
         else:
             data_list = pickle.load(open(datalist_pickle_file, 'rb'))
@@ -259,6 +259,7 @@ class Dataset_DCASE2017_Task3(Dataset):
                                 )
                                 data_list['testing'].append(new_point)
 
+            data_list['training'], _, _, _ = self.balance_data_list(data_list['training'])
             pickle.dump(data_list, open(datalist_pickle_file, 'wb'), 2)
         else:
             data_list = pickle.load(open(datalist_pickle_file, 'rb'))

@@ -97,7 +97,7 @@ def conv2d_bn(x,
         use_bias=False,
         kernel_initializer=keras.initializers.he_uniform(),
         # bias_initializer=keras.initializers.Zeros(),
-        kernel_regularizer=keras.regularizers.l2(0.0001),
+        kernel_regularizer=keras.regularizers.l2(0.0005),
         name=conv_name)(x)
     x = BatchNormalization(axis=bn_axis, center=True, scale=False, name=bn_name)(x)
     x = Activation('relu', name=name)(x)
@@ -364,7 +364,7 @@ def InceptionV3(include_top=True,
         #           kernel_regularizer=keras.regularizers.l2(0.005), name='2ndLastPrediction')(x)   #####change softmax to sigmoid
         # x = BatchNormalization(axis=-1, scale=False)(x)    #channel last axis=3
         # x = Activation('relu')(x)
-        # x = Dropout(rate=drop_out_rate)(x)   ####### added by me
+        x = Dropout(rate=drop_out_rate)(x)   ####### added by me
         x = Dense(classes, activation=None, use_bias=False,
                   kernel_initializer=keras.initializers.he_uniform(), name='predictions')(x)
         x = BatchNormalization(axis=-1, scale=True)(x)    #channel last axis=3
@@ -458,7 +458,7 @@ class LearnerInceptionV3(Learner):
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
-                epochs=17,
+                epochs=120,
                 callbacks=[tensorboard], # tensorboard, model_check_point
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=input_shape),
@@ -508,8 +508,21 @@ class LearnerInceptionV3(Learner):
 
         print("Loaded model from disk")
 
-        (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing',
-                                                              batch_size=self.dataset.num_testing_data,
-                                                              input_shape=input_shape)
-        predictions = model.predict_on_batch(X)
-        return Y, predictions
+        # (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing',
+        #                                                       batch_size=self.dataset.num_testing_data,
+        #                                                       input_shape=input_shape)
+        generator = self.dataset.generate_batch_data(category='testing',
+                                                  batch_size=256,
+                                                  input_shape=input_shape)
+        Y_all = []
+        predictions_all = []
+        for i in range(int(self.dataset.num_testing_data/256)):
+            X, Y = generator.next()
+            predictions = model.predict_on_batch(X)
+            Y_all.append(Y)
+            predictions_all.append(predictions)
+
+        Y_all = np.reshape(Y_all, (-1, self.dataset.num_classes))
+        predictions_all = np.reshape(predictions_all, (-1, self.dataset.num_classes))
+
+        return Y_all, predictions_all
