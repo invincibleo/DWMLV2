@@ -13,6 +13,8 @@ from __future__ import print_function
 
 import argparse
 import datetime
+import os, sys
+sys.path.append(os.path.split(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])[0])
 
 from application.Dataset_DCASE2017_Task3 import *
 from application.Dataset_Youtube8M import *

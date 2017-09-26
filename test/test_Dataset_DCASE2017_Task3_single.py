@@ -2,12 +2,15 @@ import unittest
 import argparse
 from hyperopt import fmin, tpe, hp
 
+import os, sys
+sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 
 from application.Dataset_DCASE2017_Task3 import *
 from application.LearnerInceptionV3 import LearnerInceptionV3
 from application.Dataset_Youtube8M import *
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 import datetime
+import tensorflow as tf
 
 DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/DWML_V2/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development"
 YOUTUBE_DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Leo/Audioset"

@@ -40,7 +40,7 @@ class LearnerMLP(Learner):
             # model.add(Dense(43, input_dim=96*20, activation='sigmoid'))#InceptionV3(weights=None, classes=527)
             num_classes = self.dataset.num_classes
             time_length = int(self.FLAGS.time_resolution/0.02) + 1
-            input_shape = (150*150*40,)#(time_length*40,)
+            input_shape = (time_length*40,)
             model = Sequential()
             model.add(Dense(50, input_shape=input_shape, activation='relu'))
             model.add(Dropout(0.2))
@@ -52,7 +52,7 @@ class LearnerMLP(Learner):
             model.compile(loss='categorical_crossentropy',
                           optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate,
                                                           beta_1=0.9, beta_2=0.999, epsilon=1e-08),
-                          metrics=['categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
+                          metrics=['binary_accuracy', 'categorical_accuracy'])  # top3_accuracy accuracy 'categorical_crossentropy' 'categorical_accuracy' multiclass_loss
 
             if tf.gfile.Exists('tmp/logs/tensorboard/' + str(self.hash_name_hashed)):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
@@ -131,8 +131,18 @@ class LearnerMLP(Learner):
         model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
         print("Loaded model from disk")
 
-        (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing',
-                                                              batch_size=self.dataset.num_testing_data,
-                                                              input_shape=input_shape)
-        predictions = model.predict_on_batch(X)
-        return Y, predictions
+        generator = self.dataset.generate_batch_data(category='testing',
+                                                  batch_size=256,
+                                                  input_shape=input_shape)
+        Y_all = []
+        predictions_all = []
+        for i in range(int(self.dataset.num_testing_data/256)):
+            X, Y = generator.next()
+            predictions = model.predict_on_batch(X)
+            Y_all.append(Y)
+            predictions_all.append(predictions)
+
+        Y_all = np.reshape(Y_all, (-1, self.dataset.num_classes))
+        predictions_all = np.reshape(predictions_all, (-1, self.dataset.num_classes))
+
+        return Y_all, predictions_all
