@@ -100,6 +100,7 @@ class Dataset(object):
         mean_std_file_addr = os.path.join(self.feature_dir, 'mean_std_time_res' + str(self.FLAGS.time_resolution) + '.json')
         if not tf.gfile.Exists(mean_std_file_addr):
             if False: # predefine for future use to suit for big datasets
+                all_features = dict()
                 feature_buf = []
                 batch_count = 0
                 for training_point in tqdm(self.data_list['training'], desc='Computing training set mean and std'):
@@ -107,9 +108,15 @@ class Dataset(object):
                     data_name = training_point.data_name
                     sub_dir = training_point.sub_dir
                     feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
-                    features = pickle.load(open(feature_file_addr, 'rb'))
+                    if feature_file_addr not in all_features.keys() and len(all_features) < 4000:
+                        features = pickle.load(open(feature_file_addr, 'rb'))
+                        all_features[feature_file_addr] = features
+                    elif feature_file_addr not in all_features.keys() and len(all_features) >= 4000:
+                        rand_idx = np.random.choice(len(all_features))
+                        pop_key = list(all_features.keys())[rand_idx]
+                        all_features.pop(pop_key)
 
-                    feature_buf.append(features[feature_idx])
+                    feature_buf.append(all_features[feature_file_addr][feature_idx])
                     batch_count += 1
                     if batch_count >= 128:
                         self.online_mean_variance(feature_buf)

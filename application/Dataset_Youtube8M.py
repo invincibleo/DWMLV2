@@ -91,7 +91,6 @@ class Dataset_Youtube8M(Dataset):
                     features = {}
                 else:
                     save_features = False
-                    # features = pickle.load(open(feature_file_addr, 'rb'))
 
                 if self.if_second_level_labels:
                     label_name = self.data_list_meta[audio_file.split('.')[0]]
@@ -142,7 +141,6 @@ class Dataset_Youtube8M(Dataset):
                             feature = Preprocessing(parameters=self.feature_parameters).feature_extraction(dataset=self,
                                                                                                            audio_raw=audio_raw)
                             features[point_idx] = np.reshape(feature, (1, -1))
-                            # features[point_idx]=feature
 
                 elif self.FLAGS.coding == 'onehot':
                     for point_idx in range(num_points):
@@ -179,7 +177,6 @@ class Dataset_Youtube8M(Dataset):
                             feature = Preprocessing(parameters=self.feature_parameters).feature_extraction(dataset=self,
                                                                                                            audio_raw=audio_raw)
                             features[point_idx] = np.reshape(feature, (1, -1))
-                            # features[point_idx]=feature
 
                 if save_features:
                     pickle.dump(features, open(feature_file_addr, 'wb'), 2)
