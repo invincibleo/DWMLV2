@@ -15,6 +15,7 @@ import hashlib
 import tensorflow as tf
 import shutil
 import os
+import sys
 from keras.models import model_from_json
 
 from abc import ABCMeta
@@ -46,9 +47,11 @@ class Learner(object):
 
     def copy_configuration_code(self):
         if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
+            code_base_addr = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0]
+
             os.makedirs("tmp/model/" + str(self.hash_name_hashed))
             os.makedirs('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/')
-            shutil.copytree('../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
+            shutil.copytree(code_base_addr + '/application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
 
     def load_model(self, model):
         model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
