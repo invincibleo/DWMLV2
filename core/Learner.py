@@ -11,6 +11,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import hashlib
+import tensorflow as tf
+import shutil
+import os
+from keras.models import model_from_json
+
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -30,3 +36,51 @@ class Learner(object):
     @abstractmethod
     def predict(self):
         pass
+
+    def generate_pathes(self):
+        self.hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(self.FLAGS.__str__())).hexdigest()
+        print(self.FLAGS.__str__())
+        model_json_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.json"
+        model_h5_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.h5"
+        return model_json_file_addr, model_h5_file_addr
+
+    def copy_configuration_code(self):
+        if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
+            os.makedirs("tmp/model/" + str(self.hash_name_hashed))
+            os.makedirs('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/')
+            shutil.copytree('../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
+
+    def load_model(self, model):
+        model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
+        return model
+
+    def load_model_from_file(self):
+        model_json_file_addr, model_h5_file_addr = self.generate_pathes()
+
+        # load json and create model
+        json_file = open(model_json_file_addr, 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+        model = model_from_json(loaded_model_json)
+        # load weights into new model
+        model.load_weights(model_h5_file_addr)
+        print("Loaded model from disk")
+        return model
+
+    def save_model(self, hist, model):
+        model_json_file_addr, model_h5_file_addr = self.generate_pathes()
+
+        # Saving the objects:
+        with open('tmp/model/objs.txt', 'wb') as histFile:  # Python 3: open(..., 'wb')
+            # pickle.dump([hist, model], f)
+            for key, value in hist.history.iteritems():
+                histFile.write(key + '-' + ','.join([str(x) for x in value]))
+                histFile.write('\n')
+
+        # serialize model to JSON
+        model_json = model.to_json()
+        with open(model_json_file_addr, "w") as json_file:
+            json_file.write(model_json)
+        # serialize weights to HDF5
+        model.save_weights(model_h5_file_addr)
+        print("Saved model to disk")

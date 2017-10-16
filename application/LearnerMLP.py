@@ -24,17 +24,12 @@ from core.Metrics import *
 
 class LearnerMLP(Learner):
     def learn(self):
-        self.hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(self.FLAGS.__str__())).hexdigest()
-        print(self.FLAGS.__str__())
-        model_json_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.json"
-        model_h5_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.h5"
+        model_json_file_addr, model_h5_file_addr = self.generate_pathes()
 
-        if not os.path.exists(model_json_file_addr):
-
-            if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
-                os.makedirs("tmp/model/" + str(self.hash_name_hashed))
-                os.makedirs('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/')
-                shutil.copytree('../../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
+        continue_training = False
+        if not os.path.exists(model_json_file_addr) or continue_training:
+            # copy the configuration code so that known in which condition the model is trained
+            self.copy_configuration_code()
 
             # model = Sequential()
             # model.add(Dense(43, input_dim=96*20, activation='sigmoid'))#InceptionV3(weights=None, classes=527)
@@ -47,6 +42,10 @@ class LearnerMLP(Learner):
             model.add(Dense(50, activation='relu', kernel_initializer='uniform'))
             model.add(Dropout(0.2))
             model.add(Dense(num_classes, activation='sigmoid', kernel_initializer='uniform'))
+
+            if continue_training:
+                # load weights into new model
+                self.load_model(model)
 
             # Compile model
             model.compile(loss='categorical_crossentropy',
@@ -90,30 +89,10 @@ class LearnerMLP(Learner):
             #     callbacks=[tensorboard],
             # )
 
-            # Saving the objects:
-            with open('tmp/model/objs.txt', 'wb') as histFile:  # Python 3: open(..., 'wb')
-                # pickle.dump([hist, model], f)
-                for key, value in hist.history.iteritems():
-                    histFile.write(key + '-' + ','.join([str(x) for x in value]))
-                    histFile.write('\n')
-
-
-            # serialize model to JSON
-            model_json = model.to_json()
-            with open(model_json_file_addr, "w") as json_file:
-                json_file.write(model_json)
-            # serialize weights to HDF5
-            model.save_weights(model_h5_file_addr)
-            print("Saved model to disk")
+            # save the model and training history
+            self.save_model(hist, model)
         else:
-            # load json and create model
-            json_file = open(model_json_file_addr, 'r')
-            loaded_model_json = json_file.read()
-            json_file.close()
-            model = model_from_json(loaded_model_json)
-            # load weights into new model
-            model.load_weights(model_h5_file_addr)
-            print("Loaded model from disk")
+            model = self.load_model_from_file()
 
         return model
 
@@ -122,15 +101,11 @@ class LearnerMLP(Learner):
         time_length = int(self.FLAGS.time_resolution / 0.02) + 1
         input_shape = (time_length * 40,)
 
-        # load json and create model
-        json_file = open("tmp/model/" + self.hash_name_hashed + "/model.json", 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
-        model = model_from_json(loaded_model_json)
-        # load weights into new model
-        model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
-        print("Loaded model from disk")
+        model = self.load_model_from_file()
 
+        # (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing',
+        #                                                       batch_size=self.dataset.num_testing_data,
+        #                                                       input_shape=input_shape)
         generator = self.dataset.generate_batch_data(category='testing',
                                                   batch_size=256,
                                                   input_shape=input_shape)

@@ -25,18 +25,12 @@ from core.Metrics import *
 
 class LearnerLSTM(Learner):
     def learn(self):
-        self.hash_name_hashed = hashlib.sha1(tf.compat.as_bytes(self.FLAGS.__str__())).hexdigest()
-        print(self.FLAGS.__str__())
-        model_json_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.json"
-        model_h5_file_addr = "tmp/model/" + str(self.hash_name_hashed) + "/model.h5"
+        model_json_file_addr, model_h5_file_addr = self.generate_pathes()
 
         continue_training = False
         if not os.path.exists(model_json_file_addr) or continue_training:
-
-            if not os.path.exists("tmp/model/" + str(self.hash_name_hashed)):
-                os.makedirs("tmp/model/" + str(self.hash_name_hashed))
-                os.makedirs('tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/')
-                shutil.copytree('../../application/', 'tmp/model/' + str(self.hash_name_hashed) + '/application/')
+            # copy the configuration code so that known in which condition the model is trained
+            self.copy_configuration_code()
 
             num_classes = self.dataset.num_classes
             time_length = int(self.FLAGS.time_resolution/0.02) + 1
@@ -81,30 +75,10 @@ class LearnerLSTM(Learner):
                 validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size),
             )
 
-            # Saving the objects:
-            with open('tmp/model/objs.txt', 'wb') as histFile:  # Python 3: open(..., 'wb')
-                # pickle.dump([hist, model], f)
-                for key, value in hist.history.iteritems():
-                    histFile.write(key + '-' + ','.join([str(x) for x in value]))
-                    histFile.write('\n')
-
-
-            # serialize model to JSON
-            model_json = model.to_json()
-            with open(model_json_file_addr, "w") as json_file:
-                json_file.write(model_json)
-            # serialize weights to HDF5
-            model.save_weights(model_h5_file_addr)
-            print("Saved model to disk")
+            # save the model and training history
+            self.save_model(hist, model)
         else:
-            # load json and create model
-            json_file = open(model_json_file_addr, 'r')
-            loaded_model_json = json_file.read()
-            json_file.close()
-            model = model_from_json(loaded_model_json)
-            # load weights into new model
-            model.load_weights(model_h5_file_addr)
-            print("Loaded model from disk")
+            model = self.load_model_from_file()
 
         return model
 
@@ -113,17 +87,20 @@ class LearnerLSTM(Learner):
         time_length = int(self.FLAGS.time_resolution / 0.02) + 1
         input_shape = (time_length, 40)
 
-        # load json and create model
-        json_file = open("tmp/model/" + self.hash_name_hashed + "/model.json", 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
-        model = model_from_json(loaded_model_json)
-        # load weights into new model
-        model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")
-        print("Loaded model from disk")
+        model = self.load_model_from_file()
 
-        (X, Y, data_point_list) = self.dataset.get_batch_data(category='testing',
-                                                              batch_size=self.dataset.num_testing_data,
-                                                              input_shape=input_shape)
-        predictions = model.predict_on_batch(X)
-        return Y, predictions
+        generator = self.dataset.generate_batch_data(category='testing',
+                                                  batch_size=256,
+                                                  input_shape=input_shape)
+        Y_all = []
+        predictions_all = []
+        for i in range(int(self.dataset.num_testing_data/256)):
+            X, Y = generator.next()
+            predictions = model.predict_on_batch(X)
+            Y_all.append(Y)
+            predictions_all.append(predictions)
+
+        Y_all = np.reshape(Y_all, (-1, self.dataset.num_classes))
+        predictions_all = np.reshape(predictions_all, (-1, self.dataset.num_classes))
+
+        return Y_all, predictions_all
