@@ -241,7 +241,7 @@ class Preprocessing(object):
         # feature_matrix = []
         # for channel in range(0, audio_raw.shape[0]):
         channel = 0
-            # Calculate Static Coefficients
+        # Calculate Static Coefficients
         spectrogram_ = self._spectrogram(
             y=audio_raw[channel, :],
             n_fft=self.parameters['mfcc'].get('n_fft'),

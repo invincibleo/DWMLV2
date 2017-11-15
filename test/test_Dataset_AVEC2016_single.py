@@ -5,15 +5,13 @@ from hyperopt import fmin, tpe, hp
 import os, sys
 sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 
-from application.Dataset_DCASE2017_Task3 import *
+from application.Dataset_AVEC2016 import *
 from application.LearnerInceptionV3 import LearnerInceptionV3
-from application.Dataset_Youtube8M import *
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 import datetime
 import tensorflow as tf
 
-DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/DWML_V2/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development"
-YOUTUBE_DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Leo/Audioset"
+DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/DWML_V2/AVEC2016"
 
 class MyTestCase(unittest.TestCase):
     def test_something(self):
@@ -107,7 +105,7 @@ class MyTestCase(unittest.TestCase):
         parser.add_argument(
             '--coding',
             type=str,
-            default='khot',
+            default='number',
             help="""\
             one hot encoding: onehot, k hot encoding: khot, continues value: number
             \
@@ -125,9 +123,7 @@ class MyTestCase(unittest.TestCase):
         FLAGS, unparsed = parser.parse_known_args()
 
 
-        # dataset = Dataset_DCASE2017_Task3(dataset_dir=DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'], normalization=True, dimension=40)
-        dataset = Dataset_Youtube8M(dataset_dir=YOUTUBE_DATASET_DIR, flag=FLAGS, preprocessing_methods=['mel'],
-                                    normalization=True, dimension=40)
+        dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=True, dimension=40, using_existing_features=False)
         learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
         evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
 
