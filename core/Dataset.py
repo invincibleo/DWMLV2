@@ -220,10 +220,11 @@ class Dataset(object):
 
                 if not len(X) and not len(Y):
                     X = np.expand_dims(feature, axis=0)
-                    Y = label_content #np.expand_dims(label_content, axis=0)
+                    # Y = label_content
+                    Y = np.expand_dims(label_content, axis=0)
                 else:
                     X = np.append(X, np.expand_dims(feature, axis=0), 0)
-                    Y = np.append(Y, label_content, 0)          #np.expand_dims(label_content, axis=0)
+                    Y = np.append(Y, np.expand_dims(label_content, axis=0), 0)          #np.expand_dims(label_content, axis=0), label_content
 
                 if X.shape[0] >= batch_size:
                     yield (X, Y)

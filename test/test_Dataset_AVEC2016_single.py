@@ -6,6 +6,7 @@ import os, sys
 sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 
 from application.Dataset_AVEC2016 import *
+from application.LearnerLSTMReg import *
 from application.LearnerInceptionV3 import LearnerInceptionV3
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 import datetime
@@ -123,29 +124,29 @@ class MyTestCase(unittest.TestCase):
         FLAGS, unparsed = parser.parse_known_args()
 
 
-        dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=True, dimension=40, using_existing_features=False)
-        learner = LearnerInceptionV3(dataset=dataset, learner_name='InceptionV3', flag=FLAGS)
-        evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
+        dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=89, using_existing_features=True)
+        learner = LearnerLSTMReg(dataset=dataset, learner_name='LSTMReg', flag=FLAGS)
+        # evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
 
         # dataset.get_batch_data('training', 10, (-1, 40, 1))
 
         learner.learn()
-        truth, prediction = learner.predict()
-        evaluator.evaluate(truth, prediction)
-        results = evaluator.results()
-        print('F:' + str(results['class_wise_average']['F']) + '\n')
-        print('ER' + str(results['class_wise_average']['ER']) + '\n')
-
-        results_dir_addr = 'tmp/results/'
-        current_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        if not tf.gfile.Exists(results_dir_addr):
-            tf.gfile.MakeDirs(results_dir_addr)
-            hash_FLAGS = hashlib.sha1(str(FLAGS)).hexdigest()
-            results_file_dir = os.path.join(results_dir_addr, dataset.dataset_name, hash_FLAGS)
-            tf.gfile.MakeDirs(results_file_dir)
-            json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
-            with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
-                f.write(str(FLAGS))
+        # truth, prediction = learner.predict()
+        # evaluator.evaluate(truth, prediction)
+        # results = evaluator.results()
+        # print('F:' + str(results['class_wise_average']['F']) + '\n')
+        # print('ER' + str(results['class_wise_average']['ER']) + '\n')
+        #
+        # results_dir_addr = 'tmp/results/'
+        # current_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        # if not tf.gfile.Exists(results_dir_addr):
+        #     tf.gfile.MakeDirs(results_dir_addr)
+        #     hash_FLAGS = hashlib.sha1(str(FLAGS)).hexdigest()
+        #     results_file_dir = os.path.join(results_dir_addr, dataset.dataset_name, hash_FLAGS)
+        #     tf.gfile.MakeDirs(results_file_dir)
+        #     json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
+        #     with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
+        #         f.write(str(FLAGS))
 
 if __name__ == '__main__':
     unittest.main()

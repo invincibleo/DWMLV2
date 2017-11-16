@@ -94,7 +94,9 @@ class Dataset_AVEC2016(Dataset):
                             end_time = time_index[point_idx + 1]
 
                             if category != 'test':
-                                label_content = np.array([arousal_annotation[point_idx], valence_annotation[point_idx]])
+                                label_content = np.zeros((1, 2))
+                                label_content[0, 0] = arousal_annotation[point_idx]
+                                label_content[0, 1] = valence_annotation[point_idx]
                             else:
                                 label_content = None
                             new_point = AudioPoint(
@@ -163,7 +165,9 @@ class Dataset_AVEC2016(Dataset):
                             start_time = time_index[point_idx]
                             end_time = time_index[point_idx + 1]
                             if category != 'test':
-                                label_content = np.array([arousal_annotation[point_idx], valence_annotation[point_idx]])
+                                label_content = np.zeros((1, 2))
+                                label_content[0, 0] = arousal_annotation[point_idx]
+                                label_content[0, 1] = valence_annotation[point_idx]
                             else:
                                 label_content = None
 
