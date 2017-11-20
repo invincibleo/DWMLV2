@@ -29,6 +29,7 @@ class Learner(object):
         self.dataset = kwargs.get('dataset', None)
         self.FLAGS = kwargs.get('flag', None)
         self.hash_name_hashed = ''
+        self.input_shape = tuple([int(x) for x in self.FLAGS.dimension.split(',')])
 
     @abstractmethod
     def learn(self):

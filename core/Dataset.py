@@ -37,7 +37,7 @@ class Dataset(object):
         self.num_training_data = kwargs.get('num_training_data', 0)
         self.num_validation_data = kwargs.get('num_validation_data', 0)
         self.num_testing_data = kwargs.get('num_testing_data', 0)
-        self.dimension = kwargs.get('dimension', 0)
+        self.dimension = tuple([int(x) for x in kwargs.get('dimension', "").split(',')])
 
         self.feature_parameter_dir = kwargs.get('feature_parameter_dir', "")
         if self.feature_parameter_dir == "":
@@ -71,11 +71,11 @@ class Dataset(object):
         return os.path.join(feature_with_parameters_dir, sub_dir, data_name.split('.')[0] + '.pickle')
 
     def online_mean_variance(self, new_batch_data):
-        mean = np.zeros((1, self.dimension)) #np.shape(new_batch_data)[2])
-        M2 = np.zeros((1, self.dimension))
+        mean = np.zeros((1, self.dimension[-1])) #np.shape(new_batch_data)[2])
+        M2 = np.zeros((1, self.dimension[-1]))
 
         for data_point in new_batch_data:
-            xx = np.reshape(data_point, (-1, self.dimension))   #data_point
+            xx = np.reshape(data_point, (-1, self.dimension[-1]))   #data_point
             for x in xx:
                 self.num_training_data += 1
                 delta = x - mean
@@ -212,7 +212,7 @@ class Dataset(object):
 
                 feature = features[feature_idx]
                 # if normalization then mean and std would not be 0 and 1 separately
-                feature = np.reshape(feature, (-1, self.dimension))
+                feature = np.reshape(feature, (-1, self.dimension[-1]))
                 feature = (feature - self.training_mean) / self.training_std
                 # feature = scipy.misc.imresize(feature, input_shape) / 255
                 feature = np.reshape(feature, (1, -1))
@@ -260,7 +260,7 @@ class Dataset(object):
 
                 feature = features[feature_idx]
                 # if normalization then mean and std would not be 0 and 1 separately
-                feature = np.reshape(feature, (-1, self.dimension))
+                feature = np.reshape(feature, (-1, self.dimension[-1]))
                 feature = (feature - self.training_mean) / self.training_std
                 # feature = scipy.misc.imresize(feature, input_shape)
                 feature = np.reshape(feature, (1, -1))
