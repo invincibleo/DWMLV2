@@ -72,7 +72,7 @@ class LearnerLSTMReg(Learner):
                 generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=self.input_shape),
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
-                epochs=1,
+                epochs=100,
                 callbacks=[tensorboard, reduce_lr_on_plateau],
                 validation_data=self.dataset.generate_batch_data(category='validation',
                                                                 batch_size=self.FLAGS.validation_batch_size, input_shape=self.input_shape),

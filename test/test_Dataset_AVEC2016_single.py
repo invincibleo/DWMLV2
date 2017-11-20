@@ -139,10 +139,12 @@ class MyTestCase(unittest.TestCase):
         current_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         if not tf.gfile.Exists(results_dir_addr):
             tf.gfile.MakeDirs(results_dir_addr)
-            hash_FLAGS = hashlib.sha1(str(FLAGS)).hexdigest()
-            results_file_dir = os.path.join(results_dir_addr, dataset.dataset_name, hash_FLAGS)
+        hash_FLAGS = hashlib.sha1(str(FLAGS)).hexdigest()
+        results_file_dir = os.path.join(results_dir_addr, dataset.dataset_name, hash_FLAGS)
+        if not tf.gfile.Exists(results_file_dir):
             tf.gfile.MakeDirs(results_file_dir)
             json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
+            json.dump(zip(truth, prediction), open(results_file_dir + '/results_' + current_time_str + '.json', 'a'), indent=4)
             with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
                 f.write(str(FLAGS))
 
