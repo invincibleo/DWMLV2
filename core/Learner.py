@@ -30,6 +30,7 @@ class Learner(object):
         self.FLAGS = kwargs.get('flag', None)
         self.hash_name_hashed = ''
         self.input_shape = tuple([int(x) for x in self.FLAGS.dimension.split(',')])
+        self.setup_keras()
 
     @abstractmethod
     def learn(self):
@@ -88,3 +89,20 @@ class Learner(object):
         # serialize weights to HDF5
         model.save_weights(model_h5_file_addr)
         print("Saved model to disk")
+
+    def setup_keras(self):
+        # Threading
+        thread_count = 20
+        os.environ['GOTO_NUM_THREADS'] = str(thread_count)
+        os.environ['OMP_NUM_THREADS'] = str(thread_count)
+        os.environ['MKL_NUM_THREADS'] = str(thread_count)
+
+        if thread_count > 1:
+            os.environ['OMP_DYNAMIC'] = 'False'
+            os.environ['MKL_DYNAMIC'] = 'False'
+        else:
+            os.environ['OMP_DYNAMIC'] = 'True'
+            os.environ['MKL_DYNAMIC'] = 'True'
+
+        # Select Keras backend
+        os.environ["KERAS_BACKEND"] = 'tensorflow'

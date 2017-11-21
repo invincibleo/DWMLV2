@@ -68,15 +68,18 @@ class LearnerLSTMReg(Learner):
                                                                      patience=5,
                                                                      epsilon=0.0005)
 
+            training_generator = self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=self.input_shape)
+            validation_generator = self.dataset.generate_batch_data(category='validation',
+                                                                batch_size=self.FLAGS.validation_batch_size, input_shape=self.input_shape)
             hist = model.fit_generator(
-                generator=self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=self.input_shape),
+                generator=training_generator,
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
                 epochs=100,
                 callbacks=[tensorboard, reduce_lr_on_plateau],
-                validation_data=self.dataset.generate_batch_data(category='validation',
-                                                                batch_size=self.FLAGS.validation_batch_size, input_shape=self.input_shape),
+                validation_data=validation_generator,
                 validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size),
+                workers=20
             )
 
             # save the model and training history

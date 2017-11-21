@@ -17,6 +17,33 @@ import tensorflow as tf
 import numpy as np
 from tqdm import tqdm
 import scipy
+import threading
+
+
+class threadsafe_iter(object):
+    """
+    Takes an iterator/generator and makes it thread-safe by
+    serializing call to the `next` method of given iterator/generator.
+    """
+    def __init__(self, it):
+        self.it = it
+        self.lock = threading.Lock()
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        with self.lock:
+            return self.it.next()
+
+
+def threadsafe_generator(f):
+    """
+    A decorator that takes a generator function and makes it thread-safe.
+    """
+    def g(*a, **kw):
+        return threadsafe_iter(f(*a, **kw))
+    return g
 
 
 class Dataset(object):
@@ -186,6 +213,7 @@ class Dataset(object):
         print("Class count: " + str(class_count_buf))
         return data_list_buf, class_count_buf_orign, none_class_count, class_count_buf
 
+    @threadsafe_generator
     def generate_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
         X = []
         Y = []
@@ -198,6 +226,8 @@ class Dataset(object):
 
         num_data_files = len(working_list)
         random_perm = np.random.permutation(num_data_files)
+        print('generator initiated')
+        idx = 0
         while (1):
             for i in range(0, num_data_files):
                 data_idx = random_perm[i]           #random.randrange(num_data_files)
@@ -228,6 +258,8 @@ class Dataset(object):
 
                 if X.shape[0] >= batch_size:
                     yield (X, Y)
+                    print('\ngenerator yielded a batch %d' % idx)
+                    idx += 1
                     X = []
                     Y = []
 
