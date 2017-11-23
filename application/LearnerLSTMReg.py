@@ -79,7 +79,7 @@ class LearnerLSTMReg(Learner):
                 callbacks=[tensorboard, reduce_lr_on_plateau],
                 validation_data=validation_generator,
                 validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size),
-                workers=20
+                workers=8
             )
 
             # save the model and training history

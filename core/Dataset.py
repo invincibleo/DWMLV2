@@ -18,6 +18,7 @@ import numpy as np
 from tqdm import tqdm
 import scipy
 import threading
+import pandas as pd
 
 
 class threadsafe_iter(object):
@@ -95,7 +96,11 @@ class Dataset(object):
             tf.gfile.Copy(oldpath=os.path.join(self.feature_parameter_dir, feature_parameter_file_name),
                           newpath=os.path.join(feature_with_parameters_dir, feature_parameter_file_name),
                           overwrite=True)
-        return os.path.join(feature_with_parameters_dir, sub_dir, data_name.split('.')[0] + '.pickle')
+        return os.path.join(feature_with_parameters_dir, sub_dir, data_name.split('.')[0] + '.csv')
+
+    def save_features_to_file(self, features, feature_file_addr):
+        features = pd.DataFrame.from_dict(features)
+        features.to_csv(feature_file_addr, header=False, index=False)
 
     def online_mean_variance(self, new_batch_data):
         mean = np.zeros((1, self.dimension[-1])) #np.shape(new_batch_data)[2])
@@ -215,8 +220,6 @@ class Dataset(object):
 
     @threadsafe_generator
     def generate_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
-        X = []
-        Y = []
         if category == 'training':
             working_list = self.data_list['training']
         elif category == 'validation':
@@ -225,43 +228,48 @@ class Dataset(object):
             working_list = self.data_list['testing']
 
         num_data_files = len(working_list)
-        random_perm = np.random.permutation(num_data_files)
         print('generator initiated')
-        idx = 0
+        generator_idx = 0
         while (1):
-            for i in range(0, num_data_files):
-                data_idx = random_perm[i]           #random.randrange(num_data_files)
-                data_point = working_list[data_idx]
-                data_name = data_point.data_name
-                sub_dir = data_point.sub_dir
-                label_content = data_point.label_content
-                feature_idx = data_point.feature_idx
+            random_perm = np.random.permutation(num_data_files)
+            for i in range(0, int(np.floor(num_data_files/batch_size))):
+                data_idx = random_perm[range(i*batch_size, (i+1)*batch_size)]
+                data_points = [working_list[x] for x in data_idx]
+                reference_dict = {}
+                idx = 0
+                for data_point in data_points:
+                    data_name = data_point.data_name
+                    sub_dir = data_point.sub_dir
+                    feature_idx = data_point.feature_idx
+                    label_content = data_point.label_content
+                    if data_name not in reference_dict.keys():
+                        reference_dict[data_name] = {'subdir': sub_dir, 'feature_entry': [feature_idx], 'label': [label_content], 'idx': [idx]}
+                    else:
+                        reference_dict[data_name]['feature_entry'].append(feature_idx)
+                        reference_dict[data_name]['label'].append(label_content)
+                        reference_dict[data_name]['idx'].append(idx)
+                    idx = idx + 1
 
-                feature_file_addr = self.get_feature_file_addr(sub_dir=sub_dir, data_name=data_name)
-                features = pickle.load(open(feature_file_addr, 'rb'))
+                features_for_batch = np.zeros(((batch_size, ) + input_shape))
+                labels_for_batch = []
+                for key, value in reference_dict.iteritems():
+                    entry_list = value['feature_entry']
+                    sub_dir = value['subdir']
+                    idx_list = value['idx']
+                    label_content_list = value['label']
+                    data_name = key
+                    feature_file_addr = self.get_feature_file_addr(sub_dir=sub_dir, data_name=data_name)
+                    labels_for_batch = labels_for_batch + label_content_list
+                    features = np.transpose(pd.read_csv(feature_file_addr, header=None, index_col=None, parse_dates=True, usecols=entry_list).as_matrix())
+                    idx = 0
+                    for x in idx_list:
+                        features_for_batch[x] = np.reshape(features[idx], input_shape)
+                        idx = idx + 1
 
-                feature = features[feature_idx]
-                # if normalization then mean and std would not be 0 and 1 separately
-                feature = np.reshape(feature, (-1, self.dimension[-1]))
-                feature = (feature - self.training_mean) / self.training_std
-                # feature = scipy.misc.imresize(feature, input_shape) / 255
-                feature = np.reshape(feature, (1, -1))
-                feature = np.reshape(feature, input_shape)
-
-                if not len(X) and not len(Y):
-                    X = np.expand_dims(feature, axis=0)
-                    # Y = label_content
-                    Y = np.expand_dims(label_content, axis=0)
-                else:
-                    X = np.append(X, np.expand_dims(feature, axis=0), 0)
-                    Y = np.append(Y, np.expand_dims(label_content, axis=0), 0)          #np.expand_dims(label_content, axis=0), label_content
-
-                if X.shape[0] >= batch_size:
-                    yield (X, Y)
-                    print('\ngenerator yielded a batch %d' % idx)
-                    idx += 1
-                    X = []
-                    Y = []
+                labels_for_batch = np.array(labels_for_batch)
+                yield (features_for_batch, labels_for_batch)
+                # print('\n' + category + ' generator yielded the batch %d' % generator_idx)
+                generator_idx += 1
 
     def get_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
         X = []

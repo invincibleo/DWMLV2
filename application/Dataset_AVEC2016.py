@@ -120,10 +120,11 @@ class Dataset_AVEC2016(Dataset):
 
                             if save_features:
                                 # feature extraction
-                                features[point_idx] = np.reshape(feature_data[point_idx], (1, -1))
+                                features[point_idx] = np.reshape(feature_data[point_idx], (-1,))
 
                     if save_features:
-                        pickle.dump(features, open(feature_file_addr, 'wb'), 2)
+                        self.save_features_to_file(features, feature_file_addr)
+                        # pickle.dump(features, open(feature_file_addr, 'wb'), 2)
             else:
                 audio_file_list = []
                 for extension in self.extensions:
@@ -198,7 +199,8 @@ class Dataset_AVEC2016(Dataset):
                                 features[point_idx] = np.reshape(feature, (1, -1))
 
                     if save_features:
-                        pickle.dump(features, open(feature_file_addr, 'wb'), 2)
+                        self.save_features_to_file(features, feature_file_addr)
+                        # pickle.dump(features, open(feature_file_addr, 'wb'), 2)
             pickle.dump(data_list, open(datalist_pickle_file, 'wb'), 2)
         else:
             data_list = pickle.load(open(datalist_pickle_file, 'rb'))
