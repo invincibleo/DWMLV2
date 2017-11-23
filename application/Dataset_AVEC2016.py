@@ -163,14 +163,16 @@ class Dataset_AVEC2016(Dataset):
                     if self.FLAGS.coding == 'number':
                         label_name = ['arousal', 'valence']
                         for point_idx in range(num_points):
-                            start_time = time_index[point_idx]
-                            end_time = time_index[point_idx + 1]
                             if category != 'test':
                                 label_content = np.zeros((1, 2))
+                                start_time = time_index[point_idx]
+                                end_time = time_index[point_idx + 1]
                                 label_content[0, 0] = arousal_annotation[point_idx]
                                 label_content[0, 1] = valence_annotation[point_idx]
                             else:
                                 label_content = None
+                                start_time = point_idx * self.FLAGS.time_resolution
+                                end_time = (point_idx + 1) * self.FLAGS.time_resolution
 
                             new_point = AudioPoint(
                                 data_name=file_prefix + '.wav',
@@ -193,11 +195,10 @@ class Dataset_AVEC2016(Dataset):
 
                             if save_features:
                                 # feature extraction
-                                audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.floor(end_time * fs))]
+                                audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.ceil(end_time * fs))]
                                 feature = Preprocessing(parameters=self.feature_parameters).feature_extraction(dataset=self,
                                                                                                                audio_raw=audio_raw)
-                                features[point_idx] = np.reshape(feature, (1, -1))
-
+                                features[point_idx] = np.reshape(feature, (-1,))
                     if save_features:
                         self.save_features_to_file(features, feature_file_addr)
                         # pickle.dump(features, open(feature_file_addr, 'wb'), 2)
@@ -217,7 +218,7 @@ class Dataset_AVEC2016(Dataset):
                     data_name = training_point.data_name
                     sub_dir = training_point.sub_dir
                     feature_file_addr = self.get_feature_file_addr(sub_dir, data_name)
-                    features = pickle.load(open(feature_file_addr, 'rb'))
+                    features = self.read_features_to_nparray(feature_file_addr)
 
                     feature_buf.append(features[feature_idx])
                     batch_count += 1

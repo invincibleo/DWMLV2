@@ -17,20 +17,76 @@ import keras
 import shutil
 
 from keras.models import model_from_json, Sequential
-from keras.layers import Dense, Dropout, LSTM
+from keras.layers import Dense, Dropout, LSTM, BatchNormalization, Conv2D, Flatten, Activation, Input
+from keras.layers import TimeDistributed, Reshape, MaxPooling2D
+from keras.models import Model
 from core.Learner import Learner
 from core.Metrics import *
 
 
+def conv2d_bn(x,
+              filters,
+              num_row,
+              num_col,
+              padding='same',
+              strides=(1, 1),
+              name=None):
+    """Utility function to apply conv + BN.
+    # Arguments
+        x: input tensor.
+        filters: filters in `Conv2D`.
+        num_row: height of the convolution kernel.
+        num_col: width of the convolution kernel.
+        padding: padding mode in `Conv2D`.
+        strides: strides in `Conv2D`.
+        name: name of the ops; will become `name + '_conv'`
+            for the convolution and `name + '_bn'` for the
+            batch norm layer.
+    # Returns
+        Output tensor after applying `Conv2D` and `BatchNormalization`.
+    """
+    if name is not None:
+        bn_name = name + '_bn'
+        conv_name = name + '_conv'
+    else:
+        bn_name = None
+        conv_name = None
+    if K.image_data_format() == 'channels_first':
+        bn_axis = 1
+    else:
+        bn_axis = 3
+    x = Conv2D(
+        filters, (num_row, num_col),
+        strides=strides,
+        padding=padding,
+        use_bias=True,
+        kernel_initializer=keras.initializers.he_uniform(),
+        bias_initializer=keras.initializers.Zeros(),
+        # kernel_regularizer=keras.regularizers.l2(0.0005),
+        name=conv_name)(x)
+    x = BatchNormalization(axis=bn_axis, center=False, scale=False, name=bn_name)(x)
+    x = Activation('relu', name=name)(x)
+    return x
+
 class LearnerLSTMReg(Learner):
     def model(self, input_shape):
-        model = Sequential()
-        model.add(LSTM(32, activation='tanh', return_sequences=True, input_shape=input_shape,
-                       dropout=0.8))  # returns a sequence of vectors of dimension 32
-        model.add(LSTM(32, activation='tanh', return_sequences=True, dropout=0.8))
-        model.add(Dense(2, activation='tanh',
-                        kernel_initializer=keras.initializers.he_normal(),
-                        bias_initializer=keras.initializers.zeros()))
+        img_input = Input(shape=input_shape)
+        x = BatchNormalization(input_shape=input_shape, axis=-1, center=True, scale=False)(img_input)
+        x = conv2d_bn(x, 2, 1, 4, padding='valid')
+        x = conv2d_bn(x, 4, 1, 4, padding='valid')
+        x = conv2d_bn(x, 8, 1, 4, padding='valid')
+        x = conv2d_bn(x, 16, 1, 4, padding='valid')
+        x = conv2d_bn(x, 32, 1, 4, padding='valid')
+        x = Flatten()(x)
+        x = Dense(256, activation='relu',
+                  kernel_initializer=keras.initializers.he_normal(),
+                  bias_initializer=keras.initializers.zeros())(x)
+        x = Reshape((1, -1))(x)
+        x = LSTM(64, activation='relu', return_sequences=True, dropout=0.8)(x)
+        x = Dense(2, activation='tanh',
+                  kernel_initializer=keras.initializers.he_normal(),
+                  bias_initializer=keras.initializers.zeros())(x)
+        model = Model(img_input, x, name='CNN_LSTM')
         return model
 
     def learn(self):
@@ -65,7 +121,7 @@ class LearnerLSTMReg(Learner):
                 mode='min')
             reduce_lr_on_plateau = keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
                                                                      factor=0.1,
-                                                                     patience=5,
+                                                                     patience=10,
                                                                      epsilon=0.0005)
 
             training_generator = self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=self.input_shape)

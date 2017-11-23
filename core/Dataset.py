@@ -102,6 +102,10 @@ class Dataset(object):
         features = pd.DataFrame.from_dict(features)
         features.to_csv(feature_file_addr, header=False, index=False)
 
+    def read_features_to_nparray(self, feature_file_addr, entry_list=None):
+        return np.transpose(pd.read_csv(feature_file_addr, header=None, index_col=None, parse_dates=True,
+                                 usecols=entry_list).as_matrix())
+
     def online_mean_variance(self, new_batch_data):
         mean = np.zeros((1, self.dimension[-1])) #np.shape(new_batch_data)[2])
         M2 = np.zeros((1, self.dimension[-1]))
@@ -228,7 +232,7 @@ class Dataset(object):
             working_list = self.data_list['testing']
 
         num_data_files = len(working_list)
-        print('generator initiated')
+        print('\n' + category + ' generator initiated')
         generator_idx = 0
         while (1):
             random_perm = np.random.permutation(num_data_files)
@@ -260,13 +264,14 @@ class Dataset(object):
                     data_name = key
                     feature_file_addr = self.get_feature_file_addr(sub_dir=sub_dir, data_name=data_name)
                     labels_for_batch = labels_for_batch + label_content_list
-                    features = np.transpose(pd.read_csv(feature_file_addr, header=None, index_col=None, parse_dates=True, usecols=entry_list).as_matrix())
+                    features = self.read_features_to_nparray(feature_file_addr, entry_list=entry_list)
                     idx = 0
                     for x in idx_list:
                         features_for_batch[x] = np.reshape(features[idx], input_shape)
                         idx = idx + 1
 
                 labels_for_batch = np.array(labels_for_batch)
+                # labels_for_batch = np.reshape(labels_for_batch, (batch_size, -1))
                 yield (features_for_batch, labels_for_batch)
                 # print('\n' + category + ' generator yielded the batch %d' % generator_idx)
                 generator_idx += 1
