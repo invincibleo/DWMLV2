@@ -13,7 +13,7 @@ from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 import datetime
 import tensorflow as tf
 
-DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/DWML_V2/AVEC2016"
+DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/Datasets/AVEC2016"
 
 class MyTestCase(unittest.TestCase):
     def test_something(self):
@@ -75,7 +75,7 @@ class MyTestCase(unittest.TestCase):
         parser.add_argument(
             '--time_resolution',
             type=float,
-            default=1,
+            default=0.04,
             help="""\
             The hop of the FFT in sec.\
             """
@@ -117,7 +117,7 @@ class MyTestCase(unittest.TestCase):
         parser.add_argument(
             '--dimension',
             type=str,
-            default="1,89",
+            default="3,40,1",
             help="""\
             input dimension to the model
             \
@@ -125,7 +125,7 @@ class MyTestCase(unittest.TestCase):
         )
         FLAGS, unparsed = parser.parse_known_args()
 
-        dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=FLAGS.dimension, using_existing_features=True)
+        dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=FLAGS.dimension, using_existing_features=False, preprocessing_methods=['mel'])
         learner = LearnerLSTMReg(dataset=dataset, learner_name='LSTMReg', flag=FLAGS)
         evaluator = Evaluator_AVEC2016()
 

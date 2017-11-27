@@ -196,8 +196,8 @@ class Dataset_AVEC2016(Dataset):
                             if save_features:
                                 # feature extraction
                                 audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.ceil(end_time * fs))]
-                                feature = Preprocessing(parameters=self.feature_parameters).feature_extraction(dataset=self,
-                                                                                                               audio_raw=audio_raw)
+                                preprocessor = Preprocessing(parameters=self.feature_parameters)
+                                feature = preprocessor.feature_extraction(preprocessor=preprocessor, dataset=self, audio_raw=audio_raw)
                                 features[point_idx] = np.reshape(feature, (-1,))
                     if save_features:
                         self.save_features_to_file(features, feature_file_addr)

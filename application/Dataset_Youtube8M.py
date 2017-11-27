@@ -138,8 +138,9 @@ class Dataset_Youtube8M(Dataset):
                         if save_features:
                             # feature extraction
                             audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.floor(end_time * fs))]
-                            feature = Preprocessing(parameters=self.feature_parameters).feature_extraction(dataset=self,
-                                                                                                           audio_raw=audio_raw)
+                            preprocessor = Preprocessing(parameters=self.feature_parameters)
+                            feature = preprocessor.feature_extraction(preprocessor=preprocessor, dataset=self,
+                                                                      audio_raw=audio_raw)
                             features[point_idx] = np.reshape(feature, (1, -1))
 
                 elif self.FLAGS.coding == 'onehot':
@@ -174,12 +175,14 @@ class Dataset_Youtube8M(Dataset):
                         if save_features:
                             # feature extraction
                             audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.floor(end_time * fs))]
-                            feature = Preprocessing(parameters=self.feature_parameters).feature_extraction(dataset=self,
-                                                                                                           audio_raw=audio_raw)
+                            preprocessor = Preprocessing(parameters=self.feature_parameters)
+                            feature = preprocessor.feature_extraction(preprocessor=preprocessor, dataset=self,
+                                                                      audio_raw=audio_raw)
                             features[point_idx] = np.reshape(feature, (1, -1))
 
                 if save_features:
-                    pickle.dump(features, open(feature_file_addr, 'wb'), 2)
+                    self.save_features_to_file(features, feature_file_addr)
+                    # pickle.dump(features, open(feature_file_addr, 'wb'), 2)
             pickle.dump(data_list, open(datalist_pickle_file, 'wb'), 2)
         else:
             data_list = pickle.load(open(datalist_pickle_file, 'rb'))

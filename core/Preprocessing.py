@@ -322,10 +322,10 @@ class Preprocessing(object):
         return event_roll
 
     @staticmethod
-    def feature_extraction(dataset, audio_raw):
+    def feature_extraction(preprocessor ,dataset, audio_raw):
         # feature extraction
         audio_raw = numpy.reshape(audio_raw, (1, -1))
-        preprocessing = Preprocessing()
+        preprocessing = preprocessor
         preprocessing_func = audio_raw
         for preprocessing_method in dataset.preprocessing_methods:
             preprocessing_func = eval('preprocessing.' + preprocessing_method)(preprocessing_func)
