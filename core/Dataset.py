@@ -271,7 +271,7 @@ class Dataset(object):
                         idx = idx + 1
 
                 labels_for_batch = np.array(labels_for_batch)
-                # labels_for_batch = np.reshape(labels_for_batch, (batch_size, -1))
+                labels_for_batch = np.reshape(labels_for_batch, (batch_size, -1))
                 yield (features_for_batch, labels_for_batch)
                 # print('\n' + category + ' generator yielded the batch %d' % generator_idx)
                 generator_idx += 1

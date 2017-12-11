@@ -84,8 +84,8 @@ class Dataset_AVEC2016(Dataset):
                         arousal_annotation = np.array(arff.load(open(arousal_annotation_file_addr, 'rb'))['data'])
                         valence_annotation = np.array(arff.load(open(valence_annotation_file_addr, 'rb'))['data'])
                         time_index = np.asfarray(arousal_annotation[:, 1])
-                        arousal_annotation = np.asfarray(arousal_annotation[:, -1])
-                        valence_annotation = np.asfarray(valence_annotation[:, -1])
+                        arousal_annotation = (np.asfarray(arousal_annotation[:, -1]) + 1) / 2    # make it between 0,1
+                        valence_annotation = (np.asfarray(valence_annotation[:, -1]) + 1) / 2    # make it between 0,1
 
                     if self.FLAGS.coding == 'number':
                         label_name = ['arousal', 'valence']
@@ -157,8 +157,8 @@ class Dataset_AVEC2016(Dataset):
                         arousal_annotation = np.array(arff.load(open(arousal_annotation_file_addr, 'rb'))['data'])
                         valence_annotation = np.array(arff.load(open(valence_annotation_file_addr, 'rb'))['data'])
                         time_index = np.asfarray(arousal_annotation[:, 1])
-                        arousal_annotation = np.asfarray(arousal_annotation[:, -1])
-                        valence_annotation = np.asfarray(valence_annotation[:, -1])
+                        arousal_annotation = (np.asfarray(arousal_annotation[:, -1]) + 1) / 2 # make it between 0,1
+                        valence_annotation = (np.asfarray(valence_annotation[:, -1]) + 1) / 2 # make it between 0,1
 
                     if self.FLAGS.coding == 'number':
                         label_name = ['arousal', 'valence']

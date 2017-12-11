@@ -117,7 +117,7 @@ class MyTestCase(unittest.TestCase):
         parser.add_argument(
             '--dimension',
             type=str,
-            default="3,40,1",
+            default="17,40,1",
             help="""\
             input dimension to the model
             \
