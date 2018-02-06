@@ -22,7 +22,7 @@ class MyTestCase(unittest.TestCase):
             '--data_dir',
             type=str,
             default='',
-            help='Path to folders of labeled audios.'
+            help='Path to folders ontology_file_addrof labeled audios.'
         )
         parser.add_argument(
             '--learning_rate',

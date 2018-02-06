@@ -40,6 +40,7 @@ class Dataset_AVEC2016(Dataset):
         self.num_classes = -1
         self.extensions = ['wav']
         self.data_list = self.create_data_list()
+        self.multi_task = ['valence_arousal', '']
 
         if self.normalization:
             self.dataset_normalization()

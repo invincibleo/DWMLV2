@@ -31,4 +31,8 @@ def get_data_file_path(dataset, data_name):
     return full_path
 
 
-
+def setup_keras():
+    """Setup keras backend and parameters"""
+    # Select Keras backend
+    os.environ["KERAS_BACKEND"] = 'tensorflow'
+    os.environ["HIP_VISIBLE_DEVICES"] = '0, 2'

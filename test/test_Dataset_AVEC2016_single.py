@@ -8,6 +8,7 @@ sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 from application.Dataset_AVEC2016 import *
 from application.LearnerLSTMReg import *
 from application.Evaluator_AVEC2016 import *
+from core.util import setup_keras
 from application.LearnerInceptionV3 import LearnerInceptionV3
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 import datetime
@@ -125,6 +126,7 @@ class MyTestCase(unittest.TestCase):
         )
         FLAGS, unparsed = parser.parse_known_args()
 
+        setup_keras()
         dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=FLAGS.dimension, using_existing_features=False, preprocessing_methods=['mel'])
         learner = LearnerLSTMReg(dataset=dataset, learner_name='LSTMReg', flag=FLAGS)
         evaluator = Evaluator_AVEC2016()
@@ -133,7 +135,6 @@ class MyTestCase(unittest.TestCase):
         truth, prediction = learner.predict()
         evaluator.evaluate(truth, prediction)
         results = evaluator.results()
-        print('CCC:' + str(results['CCC']) + '\n')
 
         results_dir_addr = 'tmp/results/'
         current_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -144,7 +145,9 @@ class MyTestCase(unittest.TestCase):
         if not tf.gfile.Exists(results_file_dir):
             tf.gfile.MakeDirs(results_file_dir)
             json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
-            json.dump(zip(truth, prediction), open(results_file_dir + '/results_' + current_time_str + '.json', 'a'), indent=4)
+            json.dump(zip(truth[:, 0], prediction[:, 0].tolist()), open(results_file_dir + '/results_' + current_time_str + '_0.json', 'a'), indent=4)
+            json.dump(zip(truth[:, 1], prediction[:, 1].tolist()), open(results_file_dir + '/results_' + current_time_str + '_1.json', 'a'), indent=4)
+
             with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
                 f.write(str(FLAGS))
 

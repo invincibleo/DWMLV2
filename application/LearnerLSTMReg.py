@@ -56,6 +56,15 @@ class LearnerLSTMReg(Learner):
                                                                      factor=0.1,
                                                                      patience=10,
                                                                      epsilon=0.0005)
+            def schedule(epoch_num=100):
+                if epoch_num <= 50:
+                    learning_rate = 0.001
+                elif epoch_num > 50 and epoch_num <= 100:
+                    learning_rate = 0.0005
+                else:
+                    learning_rate = 0.0001
+                return learning_rate
+            learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             training_generator = self.dataset.generate_batch_data(category='training', batch_size=self.FLAGS.train_batch_size, input_shape=self.input_shape)
             validation_generator = self.dataset.generate_batch_data(category='validation',
@@ -65,11 +74,11 @@ class LearnerLSTMReg(Learner):
                 generator=training_generator,
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
                 # initial_epoch=100,
-                epochs=100,
-                callbacks=[tensorboard, reduce_lr_on_plateau],
+                epochs=150,
+                callbacks=[tensorboard, learning_rate_schedule],
                 validation_data=validation_generator,
                 validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size),
-                workers=8
+                workers=20
             )
 
             # save the model and training history
@@ -87,13 +96,14 @@ class LearnerLSTMReg(Learner):
                                                   input_shape=self.input_shape)
         Y_all = []
         predictions_all = []
-        for i in range(int(self.dataset.num_testing_data/self.FLAGS.test_batch_size)):
+        for i in range(3): # range(int(self.dataset.num_testing_data/self.FLAGS.test_batch_size)):
             X, Y = generator.next()
             predictions = model.predict_on_batch(X)
             Y_all.append(Y)
             predictions_all.append(predictions)
 
-        Y_all = np.reshape(Y_all, (-1, self.dataset.num_classes))
-        predictions_all = np.reshape(predictions_all, (-1, self.dataset.num_classes))
-
+        # Y_all = np.squeeze(Y_all, 0)
+        # predictions_all = np.squeeze(predictions_all, 0)
+        Y_all = np.reshape(Y_all, (-1, np.shape(Y_all)[-1]))
+        predictions_all = np.reshape(predictions_all, (-1, np.shape(predictions_all)[-1]))
         return Y_all, predictions_all
