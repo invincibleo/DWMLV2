@@ -6,7 +6,7 @@ import os, sys
 sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 
 from application.Dataset_AVEC2016 import *
-from application.LearnerLSTMReg import *
+from application.LearnerLSTMReg_V2 import *
 from application.Evaluator_AVEC2016 import *
 from core.util import setup_keras
 from application.LearnerInceptionV3 import LearnerInceptionV3
@@ -118,7 +118,7 @@ class MyTestCase(unittest.TestCase):
         parser.add_argument(
             '--dimension',
             type=str,
-            default="17,40,1",
+            default="680",
             help="""\
             input dimension to the model
             \

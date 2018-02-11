@@ -6,10 +6,13 @@
 # @File    : Models
 # @Software: PyCharm Community Edition
 
-from keras.layers import Dense, Dropout, LSTM, BatchNormalization, Conv2D, Flatten, Activation, Input, Add
+from keras.layers import Dense, Dropout, LSTM, BatchNormalization, Conv2D, Flatten, Activation, Input, Add, Lambda
 from keras.layers import TimeDistributed, Reshape, MaxPooling2D, ZeroPadding2D, AveragePooling2D
 from keras.models import Model
 from keras.initializers import glorot_uniform
+from keras import backend as K
+import numpy as np
+import keras
 
 
 def identity_block(X, f, filters, stage, block):
@@ -193,3 +196,38 @@ def ResNet50(input_shape=(64, 64, 3)):
 #               bias_initializer=keras.initializers.zeros())(x)
 #     model = Model(img_input, x, name='CNN_LSTM')
 #     return model
+
+
+def LSTM_MIMO(num_t_x, num_input_dims, num_states=64):
+    # Define the input of your model with a shape
+    X = Input(shape=(10, 17 * 40))
+
+    # Define s0, initial hidden state for the decoder LSTM
+    # a0 = Input(shape=(2,), name='a0')
+    # c0 = Input(shape=(2,), name='c0')
+    a0 = Input(tensor=K.zeros(shape=(256, num_states)))
+    c0 = Input(tensor=K.zeros(shape=(256, num_states)))
+    a = a0
+    c = c0
+
+    ### START CODE HERE ###
+    # Step 1: Create empty list to append the outputs while you iterate (≈1 line)
+    outputs = []
+
+    # Step 2: Loop
+    for t in range(num_t_x):
+        # Step 2.A: select the "t"th time step vector from X.
+        x = Lambda(lambda x: X[:, t, :])(X)
+        # Step 2.B: Use reshapor to reshape x to be (1, n_values) (≈1 line)
+        x = Reshape((1, num_input_dims))(x)
+        # Step 2.C: Perform one step of the LSTM_cell
+        a, _, c = LSTM(num_states, return_state=True)(x, initial_state=[a, c])
+        # Step 2.D: Apply densor to the hidden state output of LSTM_Cell
+        out = Dense(2, activation='tanh')(a)
+        # Step 2.E: add the output to "outputs"
+        outputs.append(out)
+
+    # Step 3: Create model instance
+    model = Model(inputs=[X, a0, c0], outputs=outputs)    # [X, a0, c0]
+    return model
+

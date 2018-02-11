@@ -16,6 +16,7 @@ import tensorflow as tf
 import keras
 import shutil
 
+from keras.layers import Input, LSTM, Lambda
 from core.Models import *
 from core.Learner import Learner
 from core.Metrics import *
@@ -30,7 +31,12 @@ class LearnerLSTMReg(Learner):
             self.copy_configuration_code()  # copy the configuration code so that known in which condition the model is trained
 
             # expected input data shape: (batch_size, timesteps, data_dim)
-            model = ResNet50(self.input_shape)
+
+            # input_l = Input()
+            # x = LSTM(2, stateful=True)(input_l)
+            # out = Dense(2, activation='tanh')(x)
+            # model = Model(input_l, out, "LSTM_reg_v2")
+            model = LSTM_MIMO(num_t_x=10, num_input_dims=40*17, num_states=64)
 
             if continue_training:
                 model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")  # load weights into new model
@@ -56,7 +62,7 @@ class LearnerLSTMReg(Learner):
                                                                      factor=0.1,
                                                                      patience=10,
                                                                      epsilon=0.0005)
-            def schedule(epoch_num=100):
+            def schedule(epoch_num):
                 if epoch_num <= 50:
                     learning_rate = 0.001
                 elif epoch_num > 50 and epoch_num <= 100:
@@ -70,18 +76,20 @@ class LearnerLSTMReg(Learner):
                                                                              overlap=0.0,
                                                                              batch_size=self.FLAGS.train_batch_size,
                                                                              input_shape=self.input_shape)
-            validation_generator = self.dataset.generate_batch_data(category='validation',
-                                                                batch_size=self.FLAGS.validation_batch_size, input_shape=self.input_shape)
+            validation_generator = self.dataset.generate_sequencial_batch_data(category='validation', num_t_x=10,
+                                                                               overlap=0.0,
+                                                                               batch_size=self.FLAGS.validation_batch_size,
+                                                                               input_shape=self.input_shape)
             model.summary()
             hist = model.fit_generator(
                 generator=training_generator,
-                steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size),
+                steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size/10),
                 # initial_epoch=100,
                 epochs=150,
                 callbacks=[tensorboard, learning_rate_schedule],
                 validation_data=validation_generator,
-                validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size),
-                max_q_size=100,
+                validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size/10),
+                max_q_size=15,
                 workers=20
             )
 
@@ -95,7 +103,7 @@ class LearnerLSTMReg(Learner):
     def predict(self):
         model = self.load_model_from_file()
 
-        generator = self.dataset.generate_batch_data(category='validation',
+        generator = self.dataset.generate_sequencial_batch_data(category='validation',
                                                   batch_size=self.FLAGS.test_batch_size,
                                                   input_shape=self.input_shape)
         Y_all = []

@@ -276,6 +276,70 @@ class Dataset(object):
                 # print('\n' + category + ' generator yielded the batch %d' % generator_idx)
                 generator_idx += 1
 
+    @threadsafe_generator
+    def generate_sequencial_batch_data(self, category, num_t_x, overlap=0.5, batch_size=100, input_shape=(1, -1)):
+        if category == 'training':
+            working_list = self.data_list['training']
+        elif category == 'validation':
+            working_list = self.data_list['validation']
+        elif category == 'testing':
+            working_list = self.data_list['testing']
+
+        num_data_files = len(working_list)
+        print('\n' + category + ' generator initiated')
+        generator_idx = 0
+        while (1):
+            random_perm = np.random.permutation(int(num_data_files / (num_t_x * (1 - overlap))))
+            for i in range(int(np.floor(num_data_files/batch_size))):
+                window_start_point_idx = random_perm[range(i*batch_size, (i+1)*batch_size)]
+                batch_sequence_dict = {}
+                for j in window_start_point_idx:
+                    batch_sequence_dict[j] = {}
+                    data_points = working_list[j:(j + num_t_x)]
+                    idx = 0
+                    for data_point in data_points:
+                        data_name = data_point.data_name
+                        sub_dir = data_point.sub_dir
+                        feature_idx = data_point.feature_idx
+                        label_content = data_point.label_content
+                        if data_name not in batch_sequence_dict[j].keys():
+                            batch_sequence_dict[j][data_name] = {'subdir': sub_dir,
+                                                         'feature_entry': [feature_idx], 'label': [label_content],
+                                                         'idx': [idx]}
+                        else:
+                            batch_sequence_dict[j][data_name]['feature_entry'].append(feature_idx)
+                            batch_sequence_dict[j][data_name]['label'].append(label_content)
+                            batch_sequence_dict[j][data_name]['idx'].append(idx)
+                        idx = idx + 1
+
+                features_for_batch = np.zeros((batch_size, num_t_x, ) + input_shape)
+                labels_for_batch = []
+
+                for wind_idx, wind_content in batch_sequence_dict.iteritems(): # get key=wind_idx value=wind_content
+                    data_point_counter = 0
+                    for key, value in wind_content.iteritems():
+                        entry_list = value['feature_entry']
+                        sub_dir = value['subdir']
+                        idx_list = value['idx']
+                        label_content_list = value['label']
+                        data_name = key
+                        feature_file_addr = self.get_feature_file_addr(sub_dir=sub_dir, data_name=data_name)
+                        labels_for_batch.append(label_content_list)
+                        features = self.read_features_to_nparray(feature_file_addr, entry_list=entry_list)
+                        idx = 0
+                        for x in idx_list:
+                            features_for_batch[data_point_counter, x] = np.reshape(features[idx], input_shape)
+                            idx = idx + 1
+                        data_point_counter = data_point_counter + 1
+
+                labels_for_batch = np.array(labels_for_batch)
+                labels_for_batch = np.reshape(labels_for_batch, (batch_size, num_t_x, -1))
+                labels_for_batch = list(np.swapaxes(labels_for_batch, 0, 1))
+                yield (features_for_batch, labels_for_batch)
+                # print('\n' + category + ' generator yielded the batch %d' % generator_idx)
+                generator_idx += 1
+
+
     def get_batch_data(self, category, batch_size=100, input_shape=(1, -1)):
         X = []
         Y = []

@@ -33,8 +33,8 @@
         "dependency_method": "mfcc"
     }, 
     "general": {
-        "hop_length_samples": 882, 
+        "hop_length_samples": 110,
         "fs": 44100, 
-        "win_length_samples": 1764
+        "win_length_samples": 221
     }
 }
