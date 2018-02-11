@@ -291,7 +291,7 @@ class Dataset(object):
         while (1):
             random_perm = np.random.permutation(int(num_data_files / (num_t_x * (1 - overlap))))
             for i in range(int(np.floor(num_data_files/batch_size))):
-                window_start_point_idx = random_perm[range(i*batch_size, (i+1)*batch_size)]
+                window_start_point_idx = random_perm[range(i*batch_size, (i+1)*batch_size - 1)]
                 batch_sequence_dict = {}
                 for j in window_start_point_idx:
                     batch_sequence_dict[j] = {}

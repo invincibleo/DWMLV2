@@ -64,8 +64,10 @@ class LearnerLSTMReg(Learner):
                                                                      epsilon=0.0005)
             def schedule(epoch_num):
                 if epoch_num <= 50:
-                    learning_rate = 0.001
+                    learning_rate = 0.01
                 elif epoch_num > 50 and epoch_num <= 100:
+                    learning_rate = 0.001
+                elif epoch_num > 100 and epoch_num <= 150:
                     learning_rate = 0.0005
                 else:
                     learning_rate = 0.0001
@@ -85,7 +87,7 @@ class LearnerLSTMReg(Learner):
                 generator=training_generator,
                 steps_per_epoch=int(self.dataset.num_training_data/self.FLAGS.train_batch_size/10),
                 # initial_epoch=100,
-                epochs=150,
+                epochs=200,
                 callbacks=[tensorboard, learning_rate_schedule],
                 validation_data=validation_generator,
                 validation_steps=int(self.dataset.num_validation_data/self.FLAGS.train_batch_size/10),

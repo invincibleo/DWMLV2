@@ -35,6 +35,6 @@
     "general": {
         "hop_length_samples": 110,
         "fs": 44100, 
-        "win_length_samples": 221
+        "win_length_samples": 220
     }
 }
