@@ -6,15 +6,15 @@ import os, sys
 sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 
 from application.Dataset_AVEC2016 import *
-from application.LearnerLSTMReg_V2 import *
+from application.LearnerLSTMReg import *
 from application.Evaluator_AVEC2016 import *
-from core.util import setup_keras
 from application.LearnerInceptionV3 import LearnerInceptionV3
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 import datetime
 import tensorflow as tf
 
-DATASET_DIR = "/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/Datasets/AVEC2016"
+#DATASET_DIR = "/users/sista/dtang/Datasets/AVEC2016"
+DATASET_DIR = "/users/stadius/dspuser/dtang/Datasets/AVEC2016"
 
 class MyTestCase(unittest.TestCase):
     def test_something(self):
@@ -118,7 +118,7 @@ class MyTestCase(unittest.TestCase):
         parser.add_argument(
             '--dimension',
             type=str,
-            default="680",
+            default="17,40,1",
             help="""\
             input dimension to the model
             \
@@ -126,7 +126,6 @@ class MyTestCase(unittest.TestCase):
         )
         FLAGS, unparsed = parser.parse_known_args()
 
-        setup_keras()
         dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=FLAGS.dimension, using_existing_features=False, preprocessing_methods=['mel'])
         learner = LearnerLSTMReg(dataset=dataset, learner_name='LSTMReg', flag=FLAGS)
         evaluator = Evaluator_AVEC2016()
@@ -147,7 +146,6 @@ class MyTestCase(unittest.TestCase):
             json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
             json.dump(zip(truth[:, 0], prediction[:, 0].tolist()), open(results_file_dir + '/results_' + current_time_str + '_0.json', 'a'), indent=4)
             json.dump(zip(truth[:, 1], prediction[:, 1].tolist()), open(results_file_dir + '/results_' + current_time_str + '_1.json', 'a'), indent=4)
-
             with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
                 f.write(str(FLAGS))
 
