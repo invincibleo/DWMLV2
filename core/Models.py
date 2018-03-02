@@ -235,19 +235,20 @@ def LSTM_MIMO(num_t_x, num_input_dims, num_states=64):
 def SoundNet():
     """
     Builds up the SoundNet model and loads the weights from a given model file (8-layer model is kept at models/sound8.npy).
+    pool size divided by 2
     :return:
     """
     model_weights = np.load('sound8.npy').item()
     model = Sequential()
-    model.add(InputLayer(batch_input_shape=(256, None, 1)))
+    model.add(InputLayer(input_shape=(1764, 1)))
 
     filter_parameters = [{'name': 'conv1', 'num_filters': 16, 'padding': 32,
                           'kernel_size': 64, 'conv_strides': 2,
-                          'pool_size': 8, 'pool_strides': 8},
+                          'pool_size': 2, 'pool_strides': 8},
 
                          {'name': 'conv2', 'num_filters': 32, 'padding': 16,
                           'kernel_size': 32, 'conv_strides': 2,
-                          'pool_size': 8, 'pool_strides': 8},
+                          'pool_size': 2, 'pool_strides': 8},
 
                          {'name': 'conv3', 'num_filters': 64, 'padding': 8,
                           'kernel_size': 16, 'conv_strides': 2},
@@ -257,7 +258,7 @@ def SoundNet():
 
                          {'name': 'conv5', 'num_filters': 256, 'padding': 2,
                           'kernel_size': 4, 'conv_strides': 2,
-                          'pool_size': 4, 'pool_strides': 4},
+                          'pool_size': 1, 'pool_strides': 4},
 
                          {'name': 'conv6', 'num_filters': 512, 'padding': 2,
                           'kernel_size': 4, 'conv_strides': 2},
@@ -274,7 +275,7 @@ def SoundNet():
         model.add(Conv1D(x['num_filters'],
                          kernel_size=x['kernel_size'],
                          strides=x['conv_strides'],
-                         padding='valid'))
+                         padding='valid', trainable=False))
         weights = model_weights[x['name']]['weights'].reshape(model.layers[-1].get_weights()[0].shape)
         biases = model_weights[x['name']]['biases']
 
@@ -287,7 +288,7 @@ def SoundNet():
             var = model_weights[x['name']]['var']
 
 
-            model.add(BatchNormalization())
+            model.add(BatchNormalization(trainable=False))
             model.layers[-1].set_weights([gamma, beta, mean, var])
             model.add(Activation('relu'))
         if 'pool_size' in x:
