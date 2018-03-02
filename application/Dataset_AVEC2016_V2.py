@@ -22,7 +22,7 @@ import json
 import arff
 
 # from scipy.io import arff
-from core.Dataset import Dataset
+from core.Dataset_V2 import Dataset
 from core.TimeseriesPoint import *
 # from core.Preprocessing import *
 # from core.GeneralFileAccessor import *
@@ -137,8 +137,6 @@ class Dataset_AVEC2016(Dataset):
                             data_list['testing_num'] += datapoint_num
                             self.testing_total_features.append(feature_data)
 
-            self.training_dataset = tf.data.Dataset.from_tensor_slices((np.array(self.training_total_features), np.array(self.training_total_labels)))
-            self.validation_dataset = tf.data.Dataset.from_tensor_slices((np.array(self.validation_total_features), np.array(self.validation_total_labels)))
             data_list['label_list'] = self.label_list
             pickle.dump(data_list, open(datalist_pickle_file, 'wb'), 2)
         else:
@@ -156,14 +154,18 @@ class Dataset_AVEC2016(Dataset):
                 labels = np.load(addr)
                 self.validation_total_labels.append(labels)
 
-            self.training_dataset = tf.data.Dataset.from_tensor_slices((np.array(self.training_total_features), np.array(self.training_total_labels)))
-            self.validation_dataset = tf.data.Dataset.from_tensor_slices((np.array(self.validation_total_features), np.array(self.validation_total_labels)))
         # count data point
         self.num_training_data = data_list['training_num']
         self.num_validation_data = data_list['validation_num']
         self.num_testing_data = data_list['testing_num']
 
         self.label_list = data_list['label_list']
+
+        self.training_total_features = np.concatenate(self.training_total_features, axis=0)
+        self.training_total_labels = np.concatenate(self.training_total_labels, axis=0)
+
+        self.validation_total_features = np.concatenate(self.validation_total_features, axis=0)
+        self.validation_total_labels = np.concatenate(self.validation_total_labels, axis=0)
         return data_list
 
 
