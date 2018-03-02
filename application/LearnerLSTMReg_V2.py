@@ -70,7 +70,11 @@ class LearnerLSTMReg(Learner):
 
             # model = LSTM_MIMO(num_t_x=num_t_x, num_input_dims=88, num_states=64, batch_size=self.FLAGS.train_batch_size)
 
-            model = DNN_LSTM_MIMO(num_t_x=num_t_x, num_input_dims=88, num_states=64)
+            model = SoundNet()
+            model.add(LSTM(64))
+            model.add(Dense(32, activation='relu'))
+            model.add(Dense(2, activation='tanh'))
+
             if continue_training:
                 model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")  # load weights into new model
 
@@ -85,7 +89,7 @@ class LearnerLSTMReg(Learner):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
-                histogram_freq=10, write_graph=True, write_images=True)
+                histogram_freq=10, write_graph=False, write_images=False)
             model_check_point = keras.callbacks.ModelCheckpoint(
                 filepath='tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
                 save_best_only=True,

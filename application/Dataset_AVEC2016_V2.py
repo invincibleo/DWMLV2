@@ -20,6 +20,7 @@ import pandas as pd
 import hashlib
 import json
 import arff
+import librosa
 
 # from scipy.io import arff
 from core.Dataset_V2 import Dataset
@@ -61,6 +62,7 @@ class Dataset_AVEC2016(Dataset):
                     feature_file_list.extend(tf.gfile.Glob(file_glob))
 
                 for existing_feature_file_addr in tqdm(feature_file_list, desc='Creating datalist:'):
+                    # using existing feature files
                     feature_file = os.path.basename(existing_feature_file_addr)
                     arrf_content = arff.load(open(existing_feature_file_addr, 'r'))
                     data = np.array(arrf_content['data'], dtype=np.float32)
@@ -113,11 +115,93 @@ class Dataset_AVEC2016(Dataset):
                                     feature_data = np.append(feature_data, data_point, axis=0)
                                     labels = np.append(labels, np.expand_dims(annotation.loc[last_element_idx, :], axis=0), axis=0)
                             datapoint_num = np.shape(feature_data)[0]
+                            if win_size == 1:
+                                feature_data = np.squeeze(feature_data, axis=1)
                             if save_features:
                                 self.save_features_to_file(feature_data, labels, feature_file_addr)
                             return datapoint_num, feature_data, labels
 
                         datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(series_data, annotation, 10, 1, feature_file_addr)
+
+                        if category == 'dev':
+                            data_list['validation'].append(feature_file_addr+'.npy')
+                            data_list['validation_label'].append(feature_file_addr + '.labels.npy')
+                            data_list['validation_num'] += datapoint_num
+                            self.validation_total_features.append(feature_data)
+                            self.validation_total_labels.append(labels)
+                        elif category == 'train':
+                            data_list['training'].append(feature_file_addr+'.npy')
+                            data_list['training_label'].append(feature_file_addr + '.labels.npy')
+                            data_list['training_num'] += datapoint_num
+                            self.training_total_features.append(feature_data)
+                            self.training_total_labels.append(labels)
+                        else:
+                            data_list['testing'].append(feature_file_addr+'.npy')
+                            data_list['testing_label'].append(feature_file_addr + '.labels.npy')
+                            data_list['testing_num'] += datapoint_num
+                            self.testing_total_features.append(feature_data)
+            else:
+                audio_file_list = []
+                for extension in self.extensions:
+                    file_glob = os.path.join(self.dataset_dir + '/recordings_audio', '*.' + extension)
+                    audio_file_list.extend(tf.gfile.Glob(file_glob))
+                for audio_file_addr in tqdm(audio_file_list, desc='Creating features:'):
+                    audio_file = os.path.basename(audio_file_addr)
+                    audio_raw_all, fs = librosa.load(audio_file_addr, dtype='float32', sr=44100, mono=True)
+                    audio_raw_all *= 256.0
+                    audio_raw_all = pd.DataFrame(np.reshape(audio_raw_all, (1, -1)).T)
+                    file_prefix = audio_file.split('.')[0]
+
+                    feature_file_addr = self.get_feature_file_addr('recordings_audio', file_prefix)
+                    if not tf.gfile.Exists(feature_file_addr + '.npy'):
+                        feature_base_addr = '/'.join(feature_file_addr.split('/')[:-1])
+                        if not tf.gfile.Exists(feature_base_addr):
+                            os.makedirs(feature_base_addr)
+                        save_features = True
+                        features_total = []
+                        labels_total = []
+                    else:
+                        save_features = False
+                        continue
+
+                    arousal_annotation_file_dir = os.path.join(os.path.join(self.dataset_dir, 'ratings_gold_standard'), 'arousal')
+                    arousal_annotation_file_addr = arousal_annotation_file_dir + '/' + file_prefix + '.arff'
+                    valence_annotation_file_dir = os.path.join(os.path.join(self.dataset_dir, 'ratings_gold_standard'), 'valence')
+                    valence_annotation_file_addr = valence_annotation_file_dir + '/' + file_prefix + '.arff'
+
+                    category = file_prefix.split('_')[0]
+                    if category != 'test':
+                        arousal_file_content = np.array(arff.load(open(arousal_annotation_file_addr, 'r'))['data'])
+                        valence_file_content = np.array(arff.load(open(valence_annotation_file_addr, 'r'))['data'])
+                        arousal_annotation = np.array(arousal_file_content[:, -1], dtype=np.float32)
+                        valence_annotation = np.array(valence_file_content[:, -1], dtype=np.float32)
+
+                        annotation = pd.DataFrame(np.array([arousal_annotation, valence_annotation]).T, columns=['arousal', 'valence'])
+
+                        def create_windowed_datalist_with_labels(series_data, annotation, win_size, hop_size, feature_file_addr):
+                            if hop_size == 0 or hop_size > win_size:
+                                raise Exception('hop_size must in range [1,win_size]! \n')
+                            first_element_idx_list = np.arange(0, np.shape(series_data)[0] - win_size + 1, hop_size)
+                            feature_data = None
+                            labels = None
+                            for first_element_idx in first_element_idx_list:
+                                last_element_idx = first_element_idx + win_size - 1
+                                data_point = series_data.loc[first_element_idx: last_element_idx]
+                                data_point = np.expand_dims(data_point, axis=0)
+                                if feature_data is None:
+                                    feature_data = data_point
+                                    labels = np.expand_dims(annotation.loc[np.ceil(last_element_idx/1764), :], axis=0)
+                                else:
+                                    feature_data = np.append(feature_data, data_point, axis=0)
+                                    labels = np.append(labels, np.expand_dims(annotation.loc[np.ceil(last_element_idx/1764), :], axis=0), axis=0)
+                            datapoint_num = np.shape(feature_data)[0]
+                            # if win_size == 1:
+                                # feature_data = np.squeeze(feature_data, axis=1)
+                            if save_features:
+                                self.save_features_to_file(feature_data, labels, feature_file_addr)
+                            return datapoint_num, feature_data, labels
+
+                        datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(audio_raw_all, annotation, 1764, 1764, feature_file_addr)
 
                         if category == 'dev':
                             data_list['validation'].append(feature_file_addr+'.npy')

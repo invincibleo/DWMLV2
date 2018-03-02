@@ -5,7 +5,7 @@ from hyperopt import fmin, tpe, hp
 import os, sys
 sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 
-from application.Dataset_AVEC2016 import *
+from application.Dataset_AVEC2016_V2 import *
 from application.LearnerLSTMReg_V2 import *
 from application.Evaluator_AVEC2016 import *
 from core.util import setup_keras
@@ -127,7 +127,7 @@ class MyTestCase(unittest.TestCase):
         FLAGS, unparsed = parser.parse_known_args()
 
         setup_keras()
-        dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=FLAGS.dimension, using_existing_features=False, preprocessing_methods=['mel'])
+        dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=FLAGS.dimension, using_existing_features=False)
         learner = LearnerLSTMReg(dataset=dataset, learner_name='LSTMReg', flag=FLAGS)
         evaluator = Evaluator_AVEC2016()
 
