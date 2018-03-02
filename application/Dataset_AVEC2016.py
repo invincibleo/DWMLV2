@@ -60,7 +60,7 @@ class Dataset_AVEC2016(Dataset):
 
                 for existing_feature_file_addr in tqdm(feature_file_list, desc='Creating datalist:'):
                     feature_file = os.path.basename(existing_feature_file_addr)
-                    feature_data = numpy.array(arff.load(open(existing_feature_file_addr, 'rb'))['data'])
+                    feature_data = numpy.array(arff.load(open(existing_feature_file_addr, 'rb'))['data'])[:, 1:]  # the first dim is frame time
                     num_points = len(feature_data) - 1 #the last point is the replica of the second last
 
                     file_prefix = feature_file.split('.')[0]
@@ -85,8 +85,8 @@ class Dataset_AVEC2016(Dataset):
                         arousal_annotation = np.array(arff.load(open(arousal_annotation_file_addr, 'rb'))['data'])
                         valence_annotation = np.array(arff.load(open(valence_annotation_file_addr, 'rb'))['data'])
                         time_index = np.asfarray(arousal_annotation[:, 1])
-                        arousal_annotation = (np.asfarray(arousal_annotation[:, -1]) + 1) / 2    # make it between 0,1
-                        valence_annotation = (np.asfarray(valence_annotation[:, -1]) + 1) / 2    # make it between 0,1
+                        arousal_annotation = np.asfarray(arousal_annotation[:, -1]) # (np.asfarray(arousal_annotation[:, -1]) + 1) / 2    # make it between 0,1
+                        valence_annotation = np.asfarray(valence_annotation[:, -1]) # (np.asfarray(valence_annotation[:, -1]) + 1) / 2    # make it between 0,1
 
                     if self.FLAGS.coding == 'number':
                         label_name = ['arousal', 'valence']
@@ -158,8 +158,9 @@ class Dataset_AVEC2016(Dataset):
                         arousal_annotation = np.array(arff.load(open(arousal_annotation_file_addr, 'rb'))['data'])
                         valence_annotation = np.array(arff.load(open(valence_annotation_file_addr, 'rb'))['data'])
                         time_index = np.asfarray(arousal_annotation[:, 1])
-                        arousal_annotation = (np.asfarray(arousal_annotation[:, -1]) + 1) / 2 # make it between 0,1
-                        valence_annotation = (np.asfarray(valence_annotation[:, -1]) + 1) / 2 # make it between 0,1
+                        arousal_annotation = np.asfarray(arousal_annotation[:, -1]) # (np.asfarray(arousal_annotation[:, -1]) + 1) / 2    # make it between 0,1
+                        valence_annotation = np.asfarray(valence_annotation[:, -1]) # (np.asfarray(valence_annotation[:, -1]) + 1) / 2    # make it between 0,1
+
 
                     if self.FLAGS.coding == 'number':
                         label_name = ['arousal', 'valence']
