@@ -90,7 +90,7 @@ class Learner(object):
         model.save_weights(model_h5_file_addr)
         print("Saved model to disk")
 
-def setup_keras(self):
+def setup_keras():
     # Threading
     thread_count = 20
     os.environ['GOTO_NUM_THREADS'] = str(thread_count)
