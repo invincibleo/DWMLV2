@@ -6,7 +6,7 @@ import os, sys
 sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 
 from application.Dataset_AVEC2016_V2 import *
-from application.LearnerLSTMReg_V2 import *
+from application.LearnerLSTMReg_V3 import *
 from application.Evaluator_AVEC2016 import *
 from application.LearnerInceptionV3 import LearnerInceptionV3
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
