@@ -71,7 +71,7 @@ class LearnerLSTMReg(Learner):
             # model = LSTM_MIMO(num_t_x=num_t_x, num_input_dims=88, num_states=64, batch_size=self.FLAGS.train_batch_size)
 
             model = SoundNet()
-            model.add(Reshape((-1, 64, 1024)))
+            model.add(Reshape((64, 1024)))
             model.add(LSTM(64))
             model.add(Dense(2, activation='tanh'))
 
