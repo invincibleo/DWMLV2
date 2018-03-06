@@ -90,19 +90,20 @@ class Learner(object):
         model.save_weights(model_h5_file_addr)
         print("Saved model to disk")
 
-def setup_keras():
-    # Threading
-    thread_count = 20
-    os.environ['GOTO_NUM_THREADS'] = str(thread_count)
-    os.environ['OMP_NUM_THREADS'] = str(thread_count)
-    os.environ['MKL_NUM_THREADS'] = str(thread_count)
+    def setup_keras(self):
+        # Threading
+        thread_count = 20
+        os.environ['GOTO_NUM_THREADS'] = str(thread_count)
+        os.environ['OMP_NUM_THREADS'] = str(thread_count)
+        os.environ['MKL_NUM_THREADS'] = str(thread_count)
 
-    if thread_count > 1:
-        os.environ['OMP_DYNAMIC'] = 'False'
-        os.environ['MKL_DYNAMIC'] = 'False'
-    else:
-        os.environ['OMP_DYNAMIC'] = 'True'
-        os.environ['MKL_DYNAMIC'] = 'True'
+        if thread_count > 1:
+            os.environ['OMP_DYNAMIC'] = 'False'
+            os.environ['MKL_DYNAMIC'] = 'False'
+        else:
+            os.environ['OMP_DYNAMIC'] = 'True'
+            os.environ['MKL_DYNAMIC'] = 'True'
 
-    # Select Keras backend
-    os.environ["KERAS_BACKEND"] = 'tensorflow'
+        # Select Keras backend
+        os.environ["KERAS_BACKEND"] = 'tensorflow'
+        os.environ["HIP_VISIBLE_DEVICES"] = '0'
