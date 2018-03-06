@@ -126,7 +126,7 @@ class MyTestCase(unittest.TestCase):
         )
         FLAGS, unparsed = parser.parse_known_args()
 
-        dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=FLAGS.dimension, using_existing_features=True)
+        dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=FLAGS.dimension, using_existing_features=False)
 
         learner = LearnerLSTMReg(dataset=dataset, learner_name='LSTMReg', flag=FLAGS)
         evaluator = Evaluator_AVEC2016()
@@ -135,7 +135,6 @@ class MyTestCase(unittest.TestCase):
         # truth, prediction = learner.predict()
         evaluator.evaluate(truth, prediction)
         results = evaluator.results()
-        print(results)
 
         print(results)
         results_dir_addr = 'tmp/results/'

@@ -147,7 +147,7 @@ class LearnerLSTMReg(Learner):
             #                  shuffle=True)
             hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
                              batch_size=self.FLAGS.train_batch_size,
-                             epochs=300,
+                             epochs=150,
                              verbose=1,
                              callbacks=[tensorboard, learning_rate_schedule],
                              validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
