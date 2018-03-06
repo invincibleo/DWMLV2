@@ -92,7 +92,7 @@ class Dataset(object):
         return os.path.join(self.dataset_list_dir, file_name)
 
     def get_feature_file_addr(self, sub_dir, data_name):
-        hash_parameters = hashlib.sha1(str(self.feature_parameters).encode('utf-8')).hexdigest()
+        hash_parameters = hashlib.sha1((str(self.feature_parameters)+str(self.using_existing_features)).encode('utf-8')).hexdigest()
         feature_with_parameters_dir = os.path.join(self.feature_dir,
                                                    'timeRes-' + str(self.FLAGS.time_resolution) + '-' + hash_parameters)
         feature_parameter_file_name = 'feature_parameters.json'
