@@ -19,15 +19,15 @@ class Evaluator_AVEC2016(object):
             prediction = prediction_all[:, i]
             truth = np.reshape(truth, (-1,))
             prediction = np.reshape(prediction, (-1,))
-            pred_mean = np.mean(prediction, -1);
-            ref_mean = np.mean(truth, -1);
+            pred_mean = np.mean(prediction, -1)
+            ref_mean = np.mean(truth, -1)
 
-            pred_var = np.var(prediction, -1);
-            ref_var = np.var(truth, -1);
+            pred_var = np.var(prediction, -1)
+            ref_var = np.var(truth, -1)
 
-            covariance = np.mean(np.multiply((prediction - pred_mean), (truth - ref_mean)), -1);
+            covariance = np.mean(np.multiply((prediction - pred_mean), (truth - ref_mean)), -1)
 
-            CCC = (2 * covariance) / (pred_var + ref_var + (pred_mean - ref_mean) ** 2);
+            CCC = (2 * covariance) / (pred_var + ref_var + (pred_mean - ref_mean) ** 2)
             self.result_dict['CCC of dim' + str(i)] = CCC
 
     def results(self):

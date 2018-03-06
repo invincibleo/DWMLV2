@@ -72,7 +72,6 @@ class LearnerLSTMReg(Learner):
 
             model = SoundNet()
             model.add(LSTM(64))
-            model.add(Dense(32, activation='relu'))
             model.add(Dense(2, activation='tanh'))
 
             if continue_training:
@@ -82,14 +81,14 @@ class LearnerLSTMReg(Learner):
             model.compile(loss='mean_squared_error',
                           optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate,
                                                           beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
-                          metrics=['mae', 'mse'])
+                          metrics=[CCC, 'mse'])
 
             # callbacks
             if tf.gfile.Exists('tmp/logs/tensorboard/' + str(self.hash_name_hashed)):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
-                histogram_freq=10, write_graph=False, write_images=False)
+                histogram_freq=0, write_graph=True, write_images=False, batch_size=self.FLAGS.train_batch_size)
             model_check_point = keras.callbacks.ModelCheckpoint(
                 filepath='tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
                 save_best_only=True,
