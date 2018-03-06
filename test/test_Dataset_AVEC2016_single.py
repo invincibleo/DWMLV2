@@ -8,7 +8,6 @@ sys.path.append(os.path.split(os.path.dirname(os.path.realpath(__file__)))[0])
 from application.Dataset_AVEC2016_V2 import *
 from application.LearnerLSTMReg_V3 import *
 from application.Evaluator_AVEC2016 import *
-from core.Learner import setup_keras
 from application.LearnerInceptionV3 import LearnerInceptionV3
 from core.evaluation import DCASE2016_EventDetection_SegmentBasedMetrics
 import datetime
@@ -127,7 +126,6 @@ class MyTestCase(unittest.TestCase):
         )
         FLAGS, unparsed = parser.parse_known_args()
 
-        setup_keras()
         dataset = Dataset_AVEC2016(dataset_dir=DATASET_DIR, flag=FLAGS, normalization=False, dimension=FLAGS.dimension, using_existing_features=True)
 
         learner = LearnerLSTMReg(dataset=dataset, learner_name='LSTMReg', flag=FLAGS)
