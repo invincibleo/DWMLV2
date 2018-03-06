@@ -86,23 +86,31 @@ def mapk(actual, predicted, k=100):
     return keras.backend.mean(tf.metrics.sparse_average_precision_at_k(tf.cast(actual, tf.int64), predicted, 43)[0])
 
 def CCC(actual, predicted):
-    truth_all = keras.backend.get_value(actual)
-    prediction_all = keras.backend.get_value(predicted)
-    dim_num = np.shape(truth_all)[1]
-    score = 0
-    for i in range(dim_num):
-        truth = truth_all[:, i]
-        prediction = prediction_all[:, i]
-        truth = np.reshape(truth, (-1,))
-        prediction = np.reshape(prediction, (-1,))
-        pred_mean = np.mean(prediction, -1)
-        ref_mean = np.mean(truth, -1)
+    pred_mean = K.mean(predicted, axis=0)
+    ref_mean = K.mean(actual, axis=0)
+    pred_var = K.var(predicted, axis=0)
+    ref_var = K.var(actual, axis=0)
+    covariance = K.mean(K.dot((predicted - pred_mean), (actual - ref_mean)), -1)
+    CCC = (2 * covariance) / (pred_var + ref_var + K.pow((pred_mean - ref_mean), 2))
+    return K.sum(CCC) / 2
 
-        pred_var = np.var(prediction, -1)
-        ref_var = np.var(truth, -1)
-
-        covariance = np.mean(np.multiply((prediction - pred_mean), (truth - ref_mean)), -1)
-
-        CCC = (2 * covariance) / (pred_var + ref_var + (pred_mean - ref_mean) ** 2)
-        score += CCC
-    return keras.backend.variable(score / dim_num)
+    # truth_all = K.get_value(actual)
+    # prediction_all = K.get_value(predicted)
+    # dim_num = np.shape(truth_all)[1]
+    # score = 0
+    # for i in range(dim_num):
+    #     truth = truth_all[:, i]
+    #     prediction = prediction_all[:, i]
+    #     truth = np.reshape(truth, (-1,))
+    #     prediction = np.reshape(prediction, (-1,))
+    #     pred_mean = np.mean(prediction, -1)
+    #     ref_mean = np.mean(truth, -1)
+    #
+    #     pred_var = np.var(prediction, -1)
+    #     ref_var = np.var(truth, -1)
+    #
+    #     covariance = np.mean(np.multiply((prediction - pred_mean), (truth - ref_mean)), -1)
+    #
+    #     CCC = (2 * covariance) / (pred_var + ref_var + (pred_mean - ref_mean) ** 2)
+    #     score += CCC
+    # return keras.backend.variable(score / dim_num)
