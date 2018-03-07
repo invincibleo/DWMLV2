@@ -24,6 +24,7 @@ import librosa
 
 # from scipy.io import arff
 from core.Dataset_V2 import Dataset
+from core.Models import SoundNet
 from core.TimeseriesPoint import *
 # from core.Preprocessing import *
 # from core.GeneralFileAccessor import *
@@ -195,13 +196,20 @@ class Dataset_AVEC2016(Dataset):
                                     feature_data = np.append(feature_data, data_point, axis=0)
                                     labels = np.append(labels, np.expand_dims(annotation.loc[np.ceil(last_element_idx/1764), :], axis=0), axis=0)
                             datapoint_num = np.shape(feature_data)[0]
-                            # if win_size == 1:
-                                # feature_data = np.squeeze(feature_data, axis=1)
+                            if win_size == hop_size:
+                                feature_data = self.get_SoundNet_features(feature_data)
+                            else:
+                                time_span = int(win_size / (44100 * 0.04))
+                                length = int(feature_data.shape[1] / time_span)
+                                width = feature_data.shape[2]
+                                feature_data = np.reshape(feature_data, (-1, length, width))
+                                feature_data = self.get_SoundNet_features(feature_data)
+                                feature_data = np.reshape(feature_data, (datapoint_num, time_span, -1))
                             if save_features:
                                 self.save_features_to_file(feature_data, labels, feature_file_addr)
                             return datapoint_num, feature_data, labels
 
-                        datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(audio_raw_all, annotation, 1764, 1764, feature_file_addr)
+                        datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(audio_raw_all, annotation, 44100*0.04*100, 44100*0.04*10, feature_file_addr)
 
                         if category == 'dev':
                             data_list['validation'].append(feature_file_addr+'.npy')
@@ -252,4 +260,7 @@ class Dataset_AVEC2016(Dataset):
         self.validation_total_labels = np.concatenate(self.validation_total_labels, axis=0)
         return data_list
 
-
+    def get_SoundNet_features(self, featuers):
+        model = SoundNet()
+        features_after = model.predict(featuers, batch_size=512, verbose=0)
+        return features_after

@@ -71,7 +71,7 @@ class LearnerLSTMReg(Learner):
             # model = LSTM_MIMO(num_t_x=num_t_x, num_input_dims=88, num_states=64, batch_size=self.FLAGS.train_batch_size)
 
             model = SoundNet()
-            model.add(LSTM(64))
+            model.add(LSTM(64, dropout=0.5))    # dropout set as the AVEC 2017 paper
             model.add(Dense(2, activation='tanh'))
 
             if continue_training:
@@ -111,7 +111,7 @@ class LearnerLSTMReg(Learner):
             def schedule(epoch):
                 initial_lrate = 0.01
                 drop = 0.5
-                epochs_drop = 10.0
+                epochs_drop = 50.0
                 lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
                 return lrate
 
@@ -146,7 +146,7 @@ class LearnerLSTMReg(Learner):
             #                  shuffle=True)
             hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
                              batch_size=self.FLAGS.train_batch_size,
-                             epochs=150,
+                             epochs=200,
                              verbose=1,
                              callbacks=[tensorboard, learning_rate_schedule],
                              validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
