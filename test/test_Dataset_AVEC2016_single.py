@@ -131,8 +131,8 @@ class MyTestCase(unittest.TestCase):
         learner = LearnerLSTMReg(dataset=dataset, learner_name='LSTMReg', flag=FLAGS)
         evaluator = Evaluator_AVEC2016()
 
-        truth, prediction = learner.learn()
-        # truth, prediction = learner.predict()
+        learner.learn()
+        truth, prediction = learner.predict()
         evaluator.evaluate(truth, prediction)
         results = evaluator.results()
 
