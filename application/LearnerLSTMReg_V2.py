@@ -36,7 +36,7 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = Sequential()
-            model.add(LSTM(128))
+            model.add(LSTM(128, input_shape=(1, 1024)))
             model.add(Dropout(0.5))
             model.add(Dense(2, activation='tanh'))
 
