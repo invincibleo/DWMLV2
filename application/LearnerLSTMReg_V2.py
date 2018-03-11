@@ -65,7 +65,7 @@ class LearnerLSTMReg(Learner):
             model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
             # model.add(LSTM(256, batch_input_shape=(self.FLAGS.train_batch_size, 1, 512), return_sequences=False, stateful=True))
             # model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
-            model.add(Dense(2, activation='tanh'))
+            model.add(Dense(2, activation='linear'))
 
             if continue_training:
                 model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")  # load weights into new model
@@ -97,6 +97,7 @@ class LearnerLSTMReg(Learner):
                 drop = 0.5
                 epochs_drop = 50.0
                 lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
+                print("Epoch: " + str(epoch) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
 
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
@@ -131,7 +132,7 @@ class LearnerLSTMReg(Learner):
         # load weights into new model
         model.load_weights(model_h5_file_addr)
 
-        predictions_all = model.predict(self.dataset.validation_total_features, batch_size=256, verbose=0)
+        predictions_all = model.predict(self.dataset.validation_total_features, batch_size=1, verbose=0)
 
         Y_all = self.dataset.validation_total_labels
 
