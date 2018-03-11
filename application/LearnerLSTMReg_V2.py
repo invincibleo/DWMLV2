@@ -70,13 +70,18 @@ class LearnerLSTMReg(Learner):
                 drop = 0.5
                 epochs_drop = 50.0
                 lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
-                print("Epoch: " + str(epoch) + " Learning rate: " + str(lrate) + "\n")
+                print("Epoch: " + str(epoch + 1) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
 
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             model.summary()
             for i in range(200):
+                lr = schedule(i)
+                model.compile(loss='mean_squared_error',
+                              optimizer=keras.optimizers.Adam(lr=lr,
+                                                              beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
+                              metrics=[CCC, 'mae'])
                 hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
                                  batch_size=self.FLAGS.train_batch_size,
                                  epochs=1,
