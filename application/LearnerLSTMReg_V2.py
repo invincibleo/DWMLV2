@@ -57,10 +57,10 @@ class LearnerLSTMReg(Learner):
             self.copy_configuration_code()  # copy the configuration code so that known in which condition the model is trained
 
             model = Sequential()
-            model.add(LSTM(128, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=True, stateful=True))
-            model.add(BatchNormalization())
-            model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
-            model.add(LSTM(64, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
+            model.add(LSTM(128, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
+            # model.add(BatchNormalization())
+            # model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
+            # model.add(LSTM(64, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
             model.add(BatchNormalization())
             model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
             # model.add(LSTM(256, batch_input_shape=(self.FLAGS.train_batch_size, 1, 512), return_sequences=False, stateful=True))
@@ -97,7 +97,7 @@ class LearnerLSTMReg(Learner):
                 drop = 0.5
                 epochs_drop = 50.0
                 lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
-                print("Epoch: " + str(epoch) + " Learning rate: " + str(lrate) + "\n")
+                print("Epoch: " + str(epoch + 1) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
 
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
@@ -106,11 +106,16 @@ class LearnerLSTMReg(Learner):
             model.summary()
 
             for i in range(200):
+                lr = schedule(i)
+                model.compile(loss='mean_squared_error',
+                              optimizer=keras.optimizers.Adam(lr=lr,
+                                                              beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
+                              metrics=[CCC, 'mae'])
                 hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
                                  batch_size=self.FLAGS.train_batch_size,
                                  epochs=1,
                                  verbose=1,
-                                 callbacks=[tensorboard, learning_rate_schedule],
+                                 callbacks=[tensorboard],
                                  validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
                                  shuffle=False)
                 model.reset_states()
