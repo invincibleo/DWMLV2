@@ -57,10 +57,10 @@ class LearnerLSTMReg(Learner):
             self.copy_configuration_code()  # copy the configuration code so that known in which condition the model is trained
 
             model = Sequential()
-            model.add(LSTM(128, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
-            # model.add(BatchNormalization())
-            # model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
-            # model.add(LSTM(64, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
+            model.add(LSTM(128, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=True, stateful=True))
+            model.add(BatchNormalization())
+            model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
+            model.add(LSTM(64, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
             model.add(BatchNormalization())
             model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
             # model.add(LSTM(256, batch_input_shape=(self.FLAGS.train_batch_size, 1, 512), return_sequences=False, stateful=True))
