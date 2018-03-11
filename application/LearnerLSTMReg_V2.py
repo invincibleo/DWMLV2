@@ -36,9 +36,10 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = Sequential()
-            model.add(LSTM(128, input_shape=(100, 1024)))
+            model.add(LSTM(128, batch_input_shape=(1, 100, 1024), stateful=True))
+            model.add(BatchNormalization())
             model.add(Dropout(0.5))
-            model.add(Dense(2, activation='tanh'))
+            model.add(Dense(2, activation='linear'))
 
             if continue_training:
                 model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")  # load weights into new model
@@ -69,19 +70,21 @@ class LearnerLSTMReg(Learner):
                 drop = 0.5
                 epochs_drop = 50.0
                 lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
+                print("Epoch: " + str(epoch) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
 
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             model.summary()
-
-            hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
-                             batch_size=self.FLAGS.train_batch_size,
-                             epochs=200,
-                             verbose=1,
-                             callbacks=[tensorboard, learning_rate_schedule],
-                             validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
-                             shuffle=True)
+            for i in range(200):
+                hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
+                                 batch_size=self.FLAGS.train_batch_size,
+                                 epochs=1,
+                                 verbose=1,
+                                 callbacks=[tensorboard, learning_rate_schedule],
+                                 validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
+                                 shuffle=False)
+                model.reset_states()
 
             # save the model and training history
             self.save_model(hist, model)
