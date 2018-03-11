@@ -92,7 +92,7 @@ def CCC(actual, predicted):
     ref_var = K.var(actual, axis=0)
     covariance = K.mean((predicted - pred_mean) * (actual - ref_mean), axis=0)
     CCC = (2 * covariance) / (pred_var + ref_var + K.pow((pred_mean - ref_mean), 2))
-    return K.sum(CCC) / 2
+    return K.mean(CCC)  # K.sum(CCC) / 2
 
     # truth_all = K.get_value(actual)
     # prediction_all = K.get_value(predicted)
