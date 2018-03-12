@@ -34,20 +34,21 @@ class LearnerLSTMReg(Learner):
         continue_training = False
         if not os.path.exists(model_json_file_addr) or continue_training:
             self.copy_configuration_code()  # copy the configuration code so that known in which condition the model is trained
-
+            self.dataset.training_total_features = np.squeeze(self.dataset.training_total_features, axis=1)
+            self.dataset.validation_total_features = np.squeeze(self.dataset.validation_total_features, axis=1)
             # expected input data shape: (batch_size, timesteps, data_dim)
-            regr0 = RandomForestRegressor(n_estimators=10, random_state=0, verbose=2)
-            # regr0 = LinearSVR(random_state=0, loss='squared_epsilon_insensitive', dual=False, verbose=2)
+            # regr0 = RandomForestRegressor(n_estimators=10, random_state=0, verbose=2)
+            regr0 = LinearSVR(random_state=0, loss='squared_epsilon_insensitive', dual=False, verbose=2)
             regr0.fit(self.dataset.training_total_features, self.dataset.training_total_labels[:, 0])
 
-            regr1 = RandomForestRegressor(n_estimators=10, random_state=0, verbose=2)
-            # regr1 = LinearSVR(random_state=0, loss='squared_epsilon_insensitive', dual=False, verbose=2)
+            # regr1 = RandomForestRegressor(n_estimators=10, random_state=0, verbose=2)
+            regr1 = LinearSVR(random_state=0, loss='squared_epsilon_insensitive', dual=False, verbose=2)
             regr1.fit(self.dataset.training_total_features, self.dataset.training_total_labels[:, 1])
 
-            predictions_all_0 = regr0.predict(self.dataset.training_total_features)
-            predictions_all_1 = regr1.predict(self.dataset.training_total_features)
+            predictions_all_0 = regr0.predict(self.dataset.validation_total_features)
+            predictions_all_1 = regr1.predict(self.dataset.validation_total_features)
 
-            Y_all = self.dataset.training_total_labels
+            Y_all = self.dataset.validation_total_labels
             Y_all = np.reshape(Y_all, (-1, np.shape(Y_all)[-1]))
             predictions_all_0 = np.reshape(predictions_all_0, (np.shape(predictions_all_0)[-1], -1))
             predictions_all_1 = np.reshape(predictions_all_1, (np.shape(predictions_all_1)[-1], -1))
