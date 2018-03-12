@@ -86,7 +86,7 @@ class LearnerLSTMReg(Learner):
                                  batch_size=self.FLAGS.train_batch_size,
                                  epochs=1,
                                  verbose=1,
-                                 callbacks=[tensorboard, learning_rate_schedule],
+                                 callbacks=[tensorboard],
                                  validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
                                  shuffle=False)
                 model.reset_states()
