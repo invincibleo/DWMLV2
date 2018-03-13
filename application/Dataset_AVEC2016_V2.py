@@ -209,7 +209,7 @@ class Dataset_AVEC2016(Dataset):
                                 self.save_features_to_file(feature_data, labels, feature_file_addr)
                             return datapoint_num, feature_data, labels
 
-                        datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(audio_raw_all, annotation, 44100*0.04*50, 44100*0.04*1, feature_file_addr)
+                        datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(audio_raw_all, annotation, 44100*0.04*5, 44100*0.04*1, feature_file_addr)
 
                         if category == 'dev':
                             data_list['validation'].append(feature_file_addr+'.npy')
