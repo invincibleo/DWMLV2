@@ -240,7 +240,7 @@ def SoundNet():
     """
     model_weights = np.load('sound8.npy').item()
     model = Sequential()
-    model.add(InputLayer(input_shape=(1764 * 200, 1)))
+    model.add(InputLayer(input_shape=(1764 * 5, 1)))
 
     filter_parameters = [{'name': 'conv1', 'num_filters': 16, 'padding': 32,
                           'kernel_size': 64, 'conv_strides': 2,
