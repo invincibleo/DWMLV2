@@ -201,13 +201,13 @@ def ResNet50(input_shape=(64, 64, 3)):
 
 def LSTM_MIMO(num_t_x, num_input_dims, num_states=64):
     # Define the input of your model with a shape
-    X = Input(shape=(10, 17 * 40))
+    X = Input(shape=(num_t_x, num_input_dims))
 
     # Define s0, initial hidden state for the decoder LSTM
     # a0 = Input(shape=(2,), name='a0')
     # c0 = Input(shape=(2,), name='c0')
-    a0 = Input(tensor=K.zeros(shape=(256, num_states)))
-    c0 = Input(tensor=K.zeros(shape=(256, num_states)))
+    a0 = Input(tensor=K.zeros(shape=(256, num_states)), name='a0')
+    c0 = Input(tensor=K.zeros(shape=(256, num_states)), name='c0')
     a = a0
     c = c0
 
