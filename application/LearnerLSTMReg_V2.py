@@ -36,7 +36,11 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
             self.dataset.training_total_labels = np.swapaxes(self.dataset.training_total_labels, 0, 1)
             self.dataset.validation_total_labels = np.swapaxes(self.dataset.validation_total_labels, 0, 1)
-            model = LSTM_MIMO(200, 1024, 128)
+            n_a = 128
+            m = self.dataset.training_total_features.shape[0]
+            a0 = np.zeros((m, n_a))
+            c0 = np.zeros((m, n_a))
+            model = LSTM_MIMO(200, 1024, n_a)
 
             if continue_training:
                 model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")  # load weights into new model
@@ -73,12 +77,12 @@ class LearnerLSTMReg(Learner):
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             model.summary()
-            hist = model.fit(self.dataset.training_total_features, list(self.dataset.training_total_labels),
+            hist = model.fit([self.dataset.training_total_features, a0, c0], list(self.dataset.training_total_labels),
                              batch_size=self.FLAGS.train_batch_size,
                              epochs=100,
                              verbose=1,
                              callbacks=[tensorboard, learning_rate_schedule],
-                             validation_data=(self.dataset.validation_total_features, list(self.dataset.validation_total_labels)),
+                             validation_data=([self.dataset.validation_total_features, a0, c0], list(self.dataset.validation_total_labels)),
                              shuffle=True)
 
             # save the model and training history
@@ -98,7 +102,11 @@ class LearnerLSTMReg(Learner):
         # load weights into new model
         model.load_weights(model_h5_file_addr)
 
-        predictions_all = model.predict(self.dataset.validation_total_features, batch_size=self.FLAGS.validation_batch_size, verbose=0)
+        m = self.dataset.validataion_total_features.shape[0]
+        n_a = 128
+        a0 = np.zeros((m, n_a))
+        c0 = np.zeros((m, n_a))
+        predictions_all = model.predict([self.dataset.validation_total_features, a0, c0], batch_size=self.FLAGS.validation_batch_size, verbose=0)
 
         Y_all = self.dataset.validation_total_labels
 

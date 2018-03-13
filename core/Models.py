@@ -204,10 +204,10 @@ def LSTM_MIMO(num_t_x, num_input_dims, num_states=64):
     X = Input(shape=(num_t_x, num_input_dims))
 
     # Define s0, initial hidden state for the decoder LSTM
-    # a0 = Input(shape=(2,), name='a0')
-    # c0 = Input(shape=(2,), name='c0')
-    a0 = Input(tensor=K.zeros(shape=(256, num_states)), name='a0')
-    c0 = Input(tensor=K.zeros(shape=(256, num_states)), name='c0')
+    a0 = Input(shape=(num_states,), name='a0')
+    c0 = Input(shape=(num_states,), name='c0')
+    # a0 = Input(tensor=K.zeros(shape=(256, num_states)), name='a0')
+    # c0 = Input(tensor=K.zeros(shape=(256, num_states)), name='c0')
     a = a0
     c = c0
 
