@@ -69,7 +69,7 @@ class LearnerLSTMReg(Learner):
             def schedule(epoch):
                 initial_lrate = 0.01
                 drop = 0.5
-                epochs_drop = 25.0
+                epochs_drop = 50.0
                 lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
                 print("Epoch: " + str(epoch + 1) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
@@ -79,7 +79,7 @@ class LearnerLSTMReg(Learner):
             model.summary()
             hist = model.fit([self.dataset.training_total_features, a0, c0], list(self.dataset.training_total_labels),
                              batch_size=self.FLAGS.train_batch_size,
-                             epochs=300,
+                             epochs=10000,
                              verbose=1,
                              callbacks=[tensorboard, learning_rate_schedule],
                              validation_data=([self.dataset.validation_total_features, a0, c0], list(self.dataset.validation_total_labels)),
