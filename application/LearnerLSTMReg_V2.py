@@ -69,7 +69,7 @@ class LearnerLSTMReg(Learner):
             def schedule(epoch):
                 initial_lrate = 0.01
                 drop = 0.5
-                epochs_drop = 50.0
+                epochs_drop = 25.0
                 lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
                 print("Epoch: " + str(epoch + 1) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
@@ -79,14 +79,22 @@ class LearnerLSTMReg(Learner):
             model.summary()
             hist = model.fit([self.dataset.training_total_features, a0, c0], list(self.dataset.training_total_labels),
                              batch_size=self.FLAGS.train_batch_size,
-                             epochs=100,
+                             epochs=300,
                              verbose=1,
                              callbacks=[tensorboard, learning_rate_schedule],
                              validation_data=([self.dataset.validation_total_features, a0, c0], list(self.dataset.validation_total_labels)),
                              shuffle=True)
 
+            predictions_all = model.predict([self.dataset.validation_total_features, a0, c0],
+                                            batch_size=self.FLAGS.validation_batch_size, verbose=0)
+
+            Y_all = self.dataset.validation_total_labels
+
+            Y_all = np.reshape(Y_all, (-1, np.shape(Y_all)[-1]))
+            predictions_all = np.reshape(predictions_all, (-1, np.shape(predictions_all)[-1]))
+            return Y_all, predictions_all
             # save the model and training history
-            self.save_model(hist, model)
+            # self.save_model(hist, model)
         # else:
         #     # model = self.load_model_from_file()
         #     model = LSTM_MIMO(num_t_x=num_t_x, num_input_dims=88, num_states=64, batch_size=self.FLAGS.train_batch_size)
