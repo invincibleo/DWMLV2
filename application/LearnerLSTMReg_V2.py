@@ -34,8 +34,8 @@ class LearnerLSTMReg(Learner):
             self.copy_configuration_code()  # copy the configuration code so that known in which condition the model is trained
 
             # expected input data shape: (batch_size, timesteps, data_dim)
-            self.dataset.training_total_labels = np.swapaxes(self.dataset.training_total_labels, 1, 2)
-            self.dataset.validation_total_labels = np.swapaxes(self.dataset.validation_total_labels, 1, 2)
+            self.dataset.training_total_labels = np.swapaxes(self.dataset.training_total_labels, 0, 1)
+            self.dataset.validation_total_labels = np.swapaxes(self.dataset.validation_total_labels, 0, 1)
             model = LSTM_MIMO(200, 1024, 128)
 
             if continue_training:
