@@ -36,7 +36,7 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = Sequential()
-            model.add(LSTM(128, batch_input_shape=(1, 100, 1024), stateful=True))
+            model.add(LSTM(128, batch_input_shape=(1, 1, 1024), stateful=True))
             model.add(BatchNormalization())
             model.add(Dropout(0.5))
             model.add(Dense(2, activation='linear'))
@@ -68,7 +68,7 @@ class LearnerLSTMReg(Learner):
             def schedule(epoch):
                 initial_lrate = 0.01
                 drop = 0.5
-                epochs_drop = 50.0
+                epochs_drop = 25.0
                 lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
                 print("Epoch: " + str(epoch + 1) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
@@ -86,7 +86,7 @@ class LearnerLSTMReg(Learner):
                                  batch_size=self.FLAGS.train_batch_size,
                                  epochs=1,
                                  verbose=1,
-                                 callbacks=[tensorboard],
+                                 callbacks=[],
                                  validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
                                  shuffle=False)
                 model.reset_states()

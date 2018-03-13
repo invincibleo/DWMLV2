@@ -196,20 +196,20 @@ class Dataset_AVEC2016(Dataset):
                                     feature_data = np.append(feature_data, data_point, axis=0)
                                     labels = np.append(labels, np.expand_dims(annotation.loc[np.ceil(last_element_idx/1764), :], axis=0), axis=0)
                             datapoint_num = np.shape(feature_data)[0]
-                            if win_size == hop_size:
-                                feature_data = self.get_SoundNet_features(feature_data)
-                            else:
-                                time_span = int(win_size / (44100 * 0.04))
-                                length = int(feature_data.shape[1] / time_span)
-                                width = feature_data.shape[2]
-                                feature_data = np.reshape(feature_data, (-1, length, width))
-                                feature_data = self.get_SoundNet_features(feature_data)
-                                feature_data = np.reshape(feature_data, (datapoint_num, time_span, -1))
+                            # if win_size == hop_size:
+                            feature_data = self.get_SoundNet_features(feature_data)
+                            # else:
+                            #     time_span = int(win_size / (44100 * 0.04))
+                            #     length = int(feature_data.shape[1] / time_span)
+                            #     width = feature_data.shape[2]
+                            #     feature_data = np.reshape(feature_data, (-1, length, width))
+                            #     feature_data = self.get_SoundNet_features(feature_data)
+                            #     feature_data = np.reshape(feature_data, (datapoint_num, time_span, -1))
                             if save_features:
                                 self.save_features_to_file(feature_data, labels, feature_file_addr)
                             return datapoint_num, feature_data, labels
 
-                        datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(audio_raw_all, annotation, 44100*0.04*100, 44100*0.04*10, feature_file_addr)
+                        datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(audio_raw_all, annotation, 44100*0.04*200, 44100*0.04*1, feature_file_addr)
 
                         if category == 'dev':
                             data_list['validation'].append(feature_file_addr+'.npy')
