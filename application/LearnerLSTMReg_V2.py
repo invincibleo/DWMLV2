@@ -73,12 +73,12 @@ class LearnerLSTMReg(Learner):
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             model.summary()
-            hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
+            hist = model.fit(self.dataset.training_total_features, list(self.dataset.training_total_labels),
                              batch_size=self.FLAGS.train_batch_size,
                              epochs=100,
                              verbose=1,
                              callbacks=[tensorboard, learning_rate_schedule],
-                             validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
+                             validation_data=(self.dataset.validation_total_features, list(self.dataset.validation_total_labels)),
                              shuffle=True)
 
             # save the model and training history
