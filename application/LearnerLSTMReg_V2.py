@@ -56,18 +56,18 @@ class LearnerLSTMReg(Learner):
         if not os.path.exists(model_json_file_addr) or continue_training:
             self.copy_configuration_code()  # copy the configuration code so that known in which condition the model is trained
 
-            # self.dataset.training_total_features = np.squeeze(self.dataset.training_total_features, axis=1)
-            # self.dataset.validation_total_features = np.squeeze(self.dataset.training_total_features, axis=1)
+            self.dataset.training_total_features = np.squeeze(self.dataset.training_total_features, axis=1)
+            self.dataset.validation_total_features = np.squeeze(self.dataset.validation_total_features, axis=1)
             model = Sequential()
-            model.add(Dense(2000, batch_input_shape=(self.FLAGS.train_batch_size, 1024)))
+            model.add(Dense(2048, batch_input_shape=(self.FLAGS.train_batch_size, 1024)))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
-            model.add(Reshape((1, 2000)))
-            model.add(LSTM(128, return_sequences=False, stateful=True))
+            model.add(Reshape((1, 2048)))
+            model.add(LSTM(1024, return_sequences=False, stateful=True))
             # model.add(BatchNormalization())
             # model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
             # model.add(LSTM(64, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
-            model.add(Dense(1000))
+            model.add(Dense(256))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
             model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
