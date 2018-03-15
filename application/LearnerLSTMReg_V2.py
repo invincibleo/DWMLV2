@@ -62,6 +62,7 @@ class LearnerLSTMReg(Learner):
             model.add(Dense(2048, batch_input_shape=(self.FLAGS.train_batch_size, 1024)))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
+            model.add(Dropout(0.5))
             model.add(Reshape((1, 2048)))
             model.add(LSTM(1024, return_sequences=False, stateful=True))
             # model.add(BatchNormalization())
