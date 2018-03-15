@@ -56,8 +56,8 @@ class LearnerLSTMReg(Learner):
         if not os.path.exists(model_json_file_addr) or continue_training:
             self.copy_configuration_code()  # copy the configuration code so that known in which condition the model is trained
 
-            self.dataset.training_total_features = np.squeeze(self.dataset.training_total_features, axis=1)
-            self.dataset.validation_total_features = np.squeeze(self.dataset.training_total_features, axis=1)
+            # self.dataset.training_total_features = np.squeeze(self.dataset.training_total_features, axis=1)
+            # self.dataset.validation_total_features = np.squeeze(self.dataset.training_total_features, axis=1)
             model = Sequential()
             model.add(Dense(2000, batch_input_shape=(self.FLAGS.train_batch_size, 1024)))
             model.add(BatchNormalization())
