@@ -114,12 +114,12 @@ class LearnerLSTMReg(Learner):
 
             model.summary()
 
-            for i in range(200):
+            for i in range(250):
                 hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
                                  batch_size=self.FLAGS.train_batch_size,
                                  epochs=1,
                                  verbose=1,
-                                 callbacks=[tensorboard],
+                                 callbacks=[],
                                  validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
                                  shuffle=False)
                 model.reset_states()
