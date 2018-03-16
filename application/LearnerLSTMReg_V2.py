@@ -64,7 +64,7 @@ class LearnerLSTMReg(Learner):
             model.add(Activation('relu'))
             model.add(Dropout(0.5))
             model.add(Reshape((1, 2048)))
-            model.add(LSTM(1024, return_sequences=False, stateful=True))
+            model.add(LSTM(1024, return_sequences=False, stateful=True, dropout=0.5, recurrent_dropout=0.5))
             # model.add(BatchNormalization())
             # model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
             # model.add(LSTM(64, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
