@@ -98,7 +98,7 @@ class LearnerLSTMReg(Learner):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
-                histogram_freq=10, write_graph=True, write_images=False, batch_size=self.FLAGS.train_batch_size)
+                histogram_freq=100, write_grads=True, write_graph=False, write_images=False, batch_size=self.FLAGS.train_batch_size)
             model_check_point = keras.callbacks.ModelCheckpoint(
                 filepath='tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
                 save_best_only=True,
@@ -125,12 +125,12 @@ class LearnerLSTMReg(Learner):
             for i in range(250):
                 hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
                                  batch_size=self.FLAGS.train_batch_size,
-                                 epochs=1,
+                                 epochs=i+1,
                                  verbose=1,
                                  callbacks=[tensorboard],
                                  validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
                                  shuffle=False,
-                                 initial_epoch=i,)
+                                 initial_epoch=i)
                 model.reset_states()
 
             # save the model and training history
