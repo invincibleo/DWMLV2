@@ -141,6 +141,7 @@ class LearnerLSTMReg(Learner):
         # load weights into new model
         model.load_weights(model_h5_file_addr)
 
+        self.dataset.validation_total_features = np.squeeze(self.dataset.validation_total_features, axis=1)
         predictions_all = model.predict(self.dataset.validation_total_features, batch_size=self.FLAGS.validation_batch_size, verbose=0)
 
         Y_all = self.dataset.validation_total_labels
