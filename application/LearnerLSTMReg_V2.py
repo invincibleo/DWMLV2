@@ -59,22 +59,30 @@ class LearnerLSTMReg(Learner):
             self.dataset.training_total_features = np.squeeze(self.dataset.training_total_features, axis=1)
             self.dataset.validation_total_features = np.squeeze(self.dataset.validation_total_features, axis=1)
             model = Sequential()
-            model.add(Dense(2048, batch_input_shape=(self.FLAGS.train_batch_size, 1024)))
+            model.add(Dense(2048,
+                            batch_input_shape=(self.FLAGS.train_batch_size, 1024),
+                            activity_regularizer=keras.regularizers.l2(0.0001)))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
             model.add(Dropout(0.8))
             model.add(Reshape((1, 2048)))
-            model.add(LSTM(1024, return_sequences=False, stateful=True, dropout=0.8, recurrent_dropout=0.8))
+            model.add(LSTM(1024,
+                           return_sequences=False,
+                           stateful=True,
+                           dropout=0.8,
+                           recurrent_dropout=0.8,
+                           activity_regularizer=keras.regularizers.l2(0.0001)))
             # model.add(BatchNormalization())
             # model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
             # model.add(LSTM(64, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
-            model.add(Dense(256))
+            model.add(Dense(256, activity_regularizer=keras.regularizers.l2(0.0001)))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
             model.add(Dropout(0.8))# dropout set as the AVEC 2017 paper
             # model.add(LSTM(256, batch_input_shape=(self.FLAGS.train_batch_size, 1, 512), return_sequences=False, stateful=True))
             # model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
-            model.add(Dense(2, activation='linear', activity_regularizer=keras.regularizers.l2(0.0001)))
+            model.add(Dense(2, activation='linear',
+                            activity_regularizer=keras.regularizers.l2(0.0001)))
 
             if continue_training:
                 model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")  # load weights into new model
@@ -90,7 +98,7 @@ class LearnerLSTMReg(Learner):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
-                histogram_freq=0, write_graph=True, write_images=False, batch_size=self.FLAGS.train_batch_size)
+                histogram_freq=10, write_graph=True, write_images=False, batch_size=self.FLAGS.train_batch_size)
             model_check_point = keras.callbacks.ModelCheckpoint(
                 filepath='tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
                 save_best_only=True,
@@ -119,9 +127,10 @@ class LearnerLSTMReg(Learner):
                                  batch_size=self.FLAGS.train_batch_size,
                                  epochs=1,
                                  verbose=1,
-                                 callbacks=[],
+                                 callbacks=[tensorboard],
                                  validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
-                                 shuffle=False)
+                                 shuffle=False,
+                                 initial_epoch=i,)
                 model.reset_states()
 
             # save the model and training history
