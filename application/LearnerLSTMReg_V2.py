@@ -36,9 +36,8 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = Sequential()
-            model.add(LSTM(128, batch_input_shape=(self.FLAGS.train_batch_size, 1, 401), stateful=True))
-            model.add(BatchNormalization())
-            model.add(Dropout(0.5))
+            model.add(LSTM(128, batch_input_shape=(self.FLAGS.train_batch_size, 1, 401), stateful=True,
+                           dropout=0.8))
             model.add(Dense(2, activation='linear'))
 
             if continue_training:
@@ -55,7 +54,7 @@ class LearnerLSTMReg(Learner):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
-                histogram_freq=0, write_graph=True, write_images=False, batch_size=self.FLAGS.train_batch_size)
+                histogram_freq=100, write_grads=True, write_graph=False, write_images=False, batch_size=self.FLAGS.train_batch_size)
             model_check_point = keras.callbacks.ModelCheckpoint(
                 filepath='tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
                 save_best_only=True,
@@ -66,17 +65,19 @@ class LearnerLSTMReg(Learner):
                                                                      patience=10,
                                                                      epsilon=0.0005)
             def schedule(epoch):
-                initial_lrate = 0.01
-                drop = 0.5
-                epochs_drop = 25.0
-                lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
+                if epoch < 50:
+                    return 0.01
+                elif 50 <= epoch <= 200:
+                    return 0.001
+                else:
+                    return 0.0001
                 print("Epoch: " + str(epoch + 1) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
 
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             model.summary()
-            for i in range(200):
+            for i in range(500):
                 lr = schedule(i)
                 model.compile(loss='mean_squared_error',
                               optimizer=keras.optimizers.Adam(lr=lr,
@@ -84,9 +85,10 @@ class LearnerLSTMReg(Learner):
                               metrics=[CCC, 'mae'])
                 hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
                                  batch_size=self.FLAGS.train_batch_size,
-                                 epochs=1,
+                                 initial_epoch=i,
+                                 epochs=i+1,
                                  verbose=1,
-                                 callbacks=[],
+                                 callbacks=[tensorboard],
                                  validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
                                  shuffle=False)
                 model.reset_states()
