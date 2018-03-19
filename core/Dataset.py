@@ -19,6 +19,7 @@ from tqdm import tqdm
 import scipy
 import threading
 import pandas as pd
+import librosa
 
 
 class threadsafe_iter(object):
@@ -233,15 +234,11 @@ class Dataset(object):
 
         num_data_files = len(working_list)
         print('\n' + category + ' generator initiated')
-        generator_idx = 0
         while (1):
-            random_perm = np.random.permutation(num_data_files)
-            for i in range(0, int(np.floor(num_data_files/batch_size))):
-                data_idx = random_perm[range(i*batch_size, (i+1)*batch_size)]
-                data_points = [working_list[x] for x in data_idx]
+            for i in range(0, int(np.floor(num_data_files))):
                 reference_dict = {}
                 idx = 0
-                for data_point in data_points:
+                for data_point in working_list:
                     data_name = data_point.data_name
                     sub_dir = data_point.sub_dir
                     feature_idx = data_point.feature_idx
@@ -254,7 +251,6 @@ class Dataset(object):
                         reference_dict[data_name]['idx'].append(idx)
                     idx = idx + 1
 
-                features_for_batch = np.zeros(((batch_size, ) + input_shape))
                 labels_for_batch = []
                 for key, value in reference_dict.iteritems():
                     entry_list = value['feature_entry']
@@ -262,19 +258,49 @@ class Dataset(object):
                     idx_list = value['idx']
                     label_content_list = value['label']
                     data_name = key
-                    feature_file_addr = self.get_feature_file_addr(sub_dir=sub_dir, data_name=data_name)
-                    labels_for_batch = labels_for_batch + label_content_list
-                    features = self.read_features_to_nparray(feature_file_addr, entry_list=entry_list)
-                    idx = 0
-                    for x in idx_list:
-                        features_for_batch[x] = np.reshape(features[idx], input_shape)
-                        idx = idx + 1
+                    # feature_file_addr = self.get_feature_file_addr(sub_dir=sub_dir, data_name=data_name)
+                    # labels_for_batch = labels_for_batch + label_content_list
+                    # features = self.read_features_to_nparray(feature_file_addr, entry_list=entry_list)
+                    audio_raw_all, fs = librosa.load(sub_dir, dtype='float32', sr=44100, mono=True)
+                    audio_raw_all *= 256.0
+                    features = pd.DataFrame(np.reshape(audio_raw_all, (1, -1)).T)
+                    label_content_list = np.reshape(label_content_list, (-1, 2))
+                    annotation = pd.DataFrame(np.array(label_content_list),
+                                              columns=['arousal', 'valence'])
+                    def create_windowed_datalist_with_labels(series_data, annotation, win_size, hop_size):
+                        if hop_size == 0 or hop_size > win_size:
+                            raise Exception('hop_size must in range [1,win_size]! \n')
+                        first_element_idx_list = np.arange(0, np.shape(series_data)[0] - win_size + 1, hop_size)
+                        feature_data = np.zeros((batch_size, int(win_size), 1))
+                        labels = np.zeros((batch_size, 2))
+                        for i, first_element_idx in enumerate(first_element_idx_list):
+                            last_element_idx = first_element_idx + win_size - 1
+                            data_point = series_data.loc[first_element_idx: last_element_idx]
+                            data_point = np.expand_dims(data_point, axis=0)
+                            feature_data[i, :, :] = data_point
+                            labels[i, :] = np.expand_dims(annotation.loc[np.ceil(last_element_idx / 1764), :], axis=0)
+                            if i / batch_size == 0:
+                                yield (feature_data, labels)
+                                feature_data = np.zeros((batch_size, int(win_size), 1))
+                                labels = np.zeros((batch_size, 2))
 
-                labels_for_batch = np.array(labels_for_batch)
-                labels_for_batch = np.reshape(labels_for_batch, (batch_size, -1))
-                yield (features_for_batch, labels_for_batch)
-                # print('\n' + category + ' generator yielded the batch %d' % generator_idx)
-                generator_idx += 1
+                        feature_data[i + 1:, :, :] = series_data.loc[
+                                                     first_element_idx_list[-1]: first_element_idx_list[-1] + win_size]
+                        labels[i + 1:, :] = annotation.loc[np.ceil(first_element_idx_list[-1] / 1764) + 1: np.ceil(
+                            first_element_idx_list[-1] / 1764) + 24, :]
+                        yield (feature_data, labels)
+                        feature_data = np.zeros((batch_size, int(win_size), 1))
+                        labels = np.zeros((batch_size, 2))
+                        datapoint_num = np.shape(feature_data)[0]
+
+                    # datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(features,
+                    #                                                                            annotation,
+                    #                                                                            44100 * 0.04 * 125,
+                    #                                                                            44100 * 0.04 * 1)
+                    # for batch_i in range(0, feature_data.shape[0], batch_size):
+                    #     yield (feature_data[batch_i:batch_i + batch_size, :, :],
+                    #            labels_for_batch[batch_i:batch_i + batch_size, :])
+
 
     @threadsafe_generator
     def generate_sequencial_batch_data(self, category, num_t_x, overlap=0.5, batch_size=100, input_shape=(1, -1)):

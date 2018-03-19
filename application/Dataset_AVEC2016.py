@@ -19,6 +19,7 @@ import csv
 import pandas
 import hashlib
 import arff
+import pandas as pd
 
 from core.Dataset import Dataset
 from core.GeneralFileAccessor import GeneralFileAccessor
@@ -133,8 +134,10 @@ class Dataset_AVEC2016(Dataset):
                     audio_file_list.extend(tf.gfile.Glob(file_glob))
                 for audio_file_addr in tqdm(audio_file_list, desc='Creating features:'):
                     audio_file = os.path.basename(audio_file_addr)
-                    audio_raw_all, fs = GeneralFileAccessor(file_path=audio_file_addr,
-                                                            mono=True).read()
+
+                    audio_raw_all, fs = librosa.load(audio_file_addr, dtype='float32', sr=44100, mono=True)
+                    audio_raw_all *= 256.0
+                    audio_raw_all = pd.DataFrame(np.reshape(audio_raw_all, (1, -1)).T)
                     num_points = int(np.floor(len(audio_raw_all) / (fs * 0.04)))
 
                     feature_file_addr = self.get_feature_file_addr('', audio_file)
@@ -164,46 +167,41 @@ class Dataset_AVEC2016(Dataset):
 
                     if self.FLAGS.coding == 'number':
                         label_name = ['arousal', 'valence']
-                        for point_idx in range(num_points):
-                            if category != 'test':
-                                label_content = np.zeros((1, 2))
-                                start_time = time_index[point_idx]
-                                end_time = time_index[point_idx + 1]
-                                label_content[0, 0] = arousal_annotation[point_idx]
-                                label_content[0, 1] = valence_annotation[point_idx]
-                            else:
-                                label_content = None
-                                start_time = point_idx * self.FLAGS.time_resolution
-                                end_time = (point_idx + 1) * self.FLAGS.time_resolution
+                        if category != 'test':
+                            label_content = np.zeros((num_points, 2))
+                            start_time = time_index[0]
+                            end_time = time_index[-1]
+                            label_content[:, 0] = arousal_annotation[:-1]
+                            label_content[:, 1] = valence_annotation[:-1]
+                        else:
+                            label_content = None
+                            start_time = 0 * self.FLAGS.time_resolution
+                            end_time = (0 + 1) * self.FLAGS.time_resolution
 
-                            new_point = AudioPoint(
-                                data_name=file_prefix + '.wav',
-                                sub_dir='',
-                                label_name=label_name,
-                                label_content=label_content,
-                                extension='wav',
-                                fs=44100,
-                                feature_idx=point_idx,
-                                start_time=start_time,
-                                end_time=end_time
-                            )
+                        new_point = AudioPoint(
+                            data_name=file_prefix + '.wav',
+                            sub_dir=audio_file_addr,
+                            label_name=label_name,
+                            label_content=label_content,
+                            extension='wav',
+                            fs=44100,
+                            feature_idx=0,
+                            start_time=start_time,
+                            end_time=end_time
+                        )
 
-                            if category == 'dev':
-                                data_list['validation'].append(new_point)
-                            elif category == 'test':
-                                data_list['testing'].append(new_point)
-                            else:
-                                data_list['training'].append(new_point)
+                        if category == 'dev':
+                            data_list['validation'].append(new_point)
+                        elif category == 'test':
+                            data_list['testing'].append(new_point)
+                        else:
+                            data_list['training'].append(new_point)
 
-                            if save_features:
-                                # feature extraction
-                                audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.ceil(end_time * fs))]
-                                preprocessor = Preprocessing(parameters=self.feature_parameters)
-                                feature = preprocessor.feature_extraction(preprocessor=preprocessor, dataset=self, audio_raw=audio_raw)
-                                features[point_idx] = np.reshape(feature, (-1,))
-                    if save_features:
-                        self.save_features_to_file(features, feature_file_addr)
-                        # pickle.dump(features, open(feature_file_addr, 'wb'), 2)
+                        # if save_features:
+                        #     feature extraction
+                            # audio_raw = audio_raw_all[int(math.floor(start_time * fs)):int(math.ceil(end_time * fs))]
+                            # feature = audio_raw
+                            # self.save_features_to_file(feature, feature_file_addr)
             pickle.dump(data_list, open(datalist_pickle_file, 'wb'), 2)
         else:
             data_list = pickle.load(open(datalist_pickle_file, 'rb'))

@@ -76,6 +76,12 @@ class LearnerLSTMReg(Learner):
 
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
+            training_generator = self.dataset.generate_batch_data(category='training',
+                                                                  batch_size=self.FLAGS.train_batch_size,
+                                                                  input_shape=self.input_shape)
+            validation_generator = self.dataset.generate_batch_data(category='validation',
+                                                                    batch_size=self.FLAGS.validation_batch_size,
+                                                                    input_shape=self.input_shape)
             model.summary()
             for i in range(500):
                 lr = schedule(i)
@@ -83,14 +89,15 @@ class LearnerLSTMReg(Learner):
                               optimizer=keras.optimizers.Adam(lr=lr,
                                                               beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
                               metrics=[CCC, 'mae'])
-                hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
-                                 batch_size=self.FLAGS.train_batch_size,
-                                 epochs=i+1,
-                                 verbose=1,
-                                 callbacks=[tensorboard],
-                                 validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
-                                 shuffle=False,
-                                 initial_epoch=i)
+                hist = model.fit_generator(training_generator,
+                                           steps_per_epoch=9*74,
+                                           epochs=i+1,
+                                           verbose=1,
+                                           callbacks=[tensorboard],
+                                           validation_data=validation_generator,
+                                           validation_steps=9*74,
+                                           max_queue_size=10,
+                                           initial_epoch=i)
                 model.reset_states()
 
             # save the model and training history
