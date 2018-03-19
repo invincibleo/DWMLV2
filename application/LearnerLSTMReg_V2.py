@@ -37,15 +37,15 @@ class LearnerLSTMReg(Learner):
 
             model = Sequential()
             model.add(LSTM(512, batch_input_shape=(self.FLAGS.train_batch_size, 1, 401), stateful=True,
-                           dropout=0.8))
+                           dropout=0.1))
             model.add(Dense(512))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
-            model.add(Dropout(0.8))
+            model.add(Dropout(0.1))
             model.add(Dense(256))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
-            model.add(Dropout(0.8))
+            model.add(Dropout(0.1))
             model.add(Dense(2, activation='linear', activity_regularizer=keras.regularizers.l2(0.0001)))
 
             if continue_training:
@@ -85,7 +85,7 @@ class LearnerLSTMReg(Learner):
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             model.summary()
-            for i in range(500):
+            for i in range(1000):
                 lr = schedule(i)
                 model.compile(loss='mean_squared_error',
                               optimizer=keras.optimizers.Adam(lr=lr,
