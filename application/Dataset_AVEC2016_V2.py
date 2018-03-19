@@ -183,18 +183,23 @@ class Dataset_AVEC2016(Dataset):
                             if hop_size == 0 or hop_size > win_size:
                                 raise Exception('hop_size must in range [1,win_size]! \n')
                             first_element_idx_list = np.arange(0, np.shape(series_data)[0] - win_size + 1, hop_size)
-                            feature_data = None
-                            labels = None
-                            for first_element_idx in first_element_idx_list:
+                            feature_data = np.zeros((first_element_idx_list.shape[0] + 24, int(win_size), 1))
+                            labels = np.zeros((first_element_idx_list.shape[0] + 24, 2))
+                            for i, first_element_idx in enumerate(first_element_idx_list):
                                 last_element_idx = first_element_idx + win_size - 1
                                 data_point = series_data.loc[first_element_idx: last_element_idx]
                                 data_point = np.expand_dims(data_point, axis=0)
-                                if feature_data is None:
-                                    feature_data = data_point
-                                    labels = np.expand_dims(annotation.loc[np.ceil(last_element_idx/1764), :], axis=0)
-                                else:
-                                    feature_data = np.append(feature_data, data_point, axis=0)
-                                    labels = np.append(labels, np.expand_dims(annotation.loc[np.ceil(last_element_idx/1764), :], axis=0), axis=0)
+                                feature_data[i, :, :] = data_point
+                                labels[i, :] = np.expand_dims(annotation.loc[np.ceil(last_element_idx/1764), :], axis=0)
+                                # if feature_data is None:
+                                #     feature_data = data_point
+                                #     labels = np.expand_dims(annotation.loc[np.ceil(last_element_idx/1764), :], axis=0)
+                                # else:
+                                #     feature_data = np.append(feature_data, data_point, axis=0)
+                                #     labels = np.append(labels, np.expand_dims(annotation.loc[np.ceil(last_element_idx/1764), :], axis=0), axis=0)
+
+                            feature_data[i+1:, :, :] = series_data.loc[first_element_idx_list[-1]: first_element_idx_list[-1] + win_size]
+                            labels[i+1:, :] = annotation.loc[np.ceil(first_element_idx_list[-1]/1764) + 1: np.ceil(first_element_idx_list[-1]/1764) + 24, :]
                             datapoint_num = np.shape(feature_data)[0]
                             # if win_size == hop_size:
                             feature_data = self.get_SoundNet_features(feature_data)
