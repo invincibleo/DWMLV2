@@ -279,7 +279,7 @@ class Dataset(object):
                             data_point = np.expand_dims(data_point, axis=0)
                             feature_data[i, :, :] = data_point
                             labels[i, :] = np.expand_dims(annotation.loc[np.ceil(last_element_idx / 1764), :], axis=0)
-                            if i / batch_size == 0:
+                            if i % batch_size <= np.finfo.eps('float32'):
                                 yield (feature_data, labels)
                                 feature_data = np.zeros((batch_size, int(win_size), 1))
                                 labels = np.zeros((batch_size, 2))
