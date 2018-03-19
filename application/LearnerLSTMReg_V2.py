@@ -36,9 +36,17 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = Sequential()
-            model.add(LSTM(128, batch_input_shape=(self.FLAGS.train_batch_size, 1, 401), stateful=True,
+            model.add(LSTM(512, batch_input_shape=(self.FLAGS.train_batch_size, 1, 401), stateful=True,
                            dropout=0.8))
-            model.add(Dense(2, activation='linear'))
+            model.add(Dense(512))
+            model.add(BatchNormalization())
+            model.add(Activation('relu'))
+            model.add(Dropout(0.8))
+            model.add(Dense(256))
+            model.add(BatchNormalization())
+            model.add(Activation('relu'))
+            model.add(Dropout(0.8))
+            model.add(Dense(2, activation='linear', activity_regularizer=keras.regularizers.l2(0.0001)))
 
             if continue_training:
                 model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")  # load weights into new model
