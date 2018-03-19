@@ -37,7 +37,7 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = SoundNet()
-            model.add(LSTM(128, stateful=True, dropout=0.8))
+            model.add(LSTM(128, stateful=True, dropout=0.2))
             model.add(Dense(2, activation='linear', activity_regularizer=l2(0.0001)))
 
             if continue_training:
