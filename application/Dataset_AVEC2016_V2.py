@@ -210,8 +210,8 @@ class Dataset_AVEC2016(Dataset):
                             #     feature_data = np.reshape(feature_data, (-1, length, width))
                             #     feature_data = self.get_SoundNet_features(feature_data)
                             #     feature_data = np.reshape(feature_data, (datapoint_num, time_span, -1))
-                            if save_features:
-                                self.save_features_to_file(feature_data, labels, feature_file_addr)
+                            # if save_features:
+                                # self.save_features_to_file(feature_data, labels, feature_file_addr)
                             return datapoint_num, feature_data, labels
 
                         datapoint_num, feature_data, labels = create_windowed_datalist_with_labels(audio_raw_all, annotation, 44100*0.04*125, 44100*0.04*1, feature_file_addr)
