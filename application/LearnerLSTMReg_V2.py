@@ -62,7 +62,7 @@ class LearnerLSTMReg(Learner):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
-                histogram_freq=100, write_grads=True, write_graph=False, write_images=False, batch_size=self.FLAGS.train_batch_size)
+                histogram_freq=0, write_grads=True, write_graph=False, write_images=False, batch_size=self.FLAGS.train_batch_size)
             model_check_point = keras.callbacks.ModelCheckpoint(
                 filepath='tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
                 save_best_only=True,
@@ -73,9 +73,9 @@ class LearnerLSTMReg(Learner):
                                                                      patience=10,
                                                                      epsilon=0.0005)
             def schedule(epoch):
-                if epoch < 50:
+                if epoch < 30:
                     return 0.01
-                elif 50 <= epoch <= 200:
+                elif 30 <= epoch <= 200:
                     return 0.001
                 else:
                     return 0.0001
@@ -85,7 +85,7 @@ class LearnerLSTMReg(Learner):
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             model.summary()
-            for i in range(1000):
+            for i in range(500):
                 lr = schedule(i)
                 model.compile(loss='mean_squared_error',
                               optimizer=keras.optimizers.Adam(lr=lr,
