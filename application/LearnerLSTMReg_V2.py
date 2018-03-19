@@ -60,8 +60,7 @@ class LearnerLSTMReg(Learner):
             self.dataset.validation_total_features = np.squeeze(self.dataset.validation_total_features, axis=1)
             model = Sequential()
             model.add(Dense(2048,
-                            batch_input_shape=(self.FLAGS.train_batch_size, 1024),
-                            activity_regularizer=keras.regularizers.l2(0.0001)))
+                            batch_input_shape=(self.FLAGS.train_batch_size, 1024)))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
             model.add(Dropout(0.8))
@@ -75,7 +74,11 @@ class LearnerLSTMReg(Learner):
             # model.add(BatchNormalization())
             # model.add(Dropout(0.5))# dropout set as the AVEC 2017 paper
             # model.add(LSTM(64, batch_input_shape=(self.FLAGS.train_batch_size, 1, 1024), return_sequences=False, stateful=True))
-            model.add(Dense(256, activity_regularizer=keras.regularizers.l2(0.0001)))
+            model.add(Dense(512))
+            model.add(BatchNormalization())
+            model.add(Activation('relu'))
+            model.add(Dropout(0.8))# dropout set as the AVEC 2017 paper
+            model.add(Dense(256))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
             model.add(Dropout(0.8))# dropout set as the AVEC 2017 paper
@@ -122,7 +125,7 @@ class LearnerLSTMReg(Learner):
 
             model.summary()
 
-            for i in range(250):
+            for i in range(5000):
                 hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
                                  batch_size=self.FLAGS.train_batch_size,
                                  epochs=i+1,
@@ -150,7 +153,6 @@ class LearnerLSTMReg(Learner):
         # load weights into new model
         model.load_weights(model_h5_file_addr)
 
-        self.dataset.validation_total_features = np.squeeze(self.dataset.validation_total_features, axis=1)
         predictions_all = model.predict(self.dataset.validation_total_features, batch_size=self.FLAGS.validation_batch_size, verbose=0)
 
         Y_all = self.dataset.validation_total_labels
