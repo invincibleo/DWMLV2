@@ -202,7 +202,7 @@ class Dataset_AVEC2016(Dataset):
                             labels[i+1:, :] = annotation.loc[np.ceil(first_element_idx_list[-1]/1764) + 1: np.ceil(first_element_idx_list[-1]/1764) + 24, :]
                             datapoint_num = np.shape(feature_data)[0]
                             # if win_size == hop_size:
-                            feature_data = self.get_SoundNet_features(feature_data)
+                            # feature_data = self.get_SoundNet_features(feature_data)
                             # else:
                             #     time_span = int(win_size / (44100 * 0.04))
                             #     length = int(feature_data.shape[1] / time_span)
