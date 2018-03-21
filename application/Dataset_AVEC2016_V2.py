@@ -250,6 +250,12 @@ class Dataset_AVEC2016(Dataset):
 
         self.validation_total_features = np.concatenate(self.validation_total_features, axis=0)
         self.validation_total_labels = np.concatenate(self.validation_total_labels, axis=0)
+
+        self.training_mean = np.mean(self.training_total_features, axis=0, keepdims=True)
+        self.training_std = np.std(self.training_total_features, axis=0, keepdims=True) + np.finfo(np.float32).eps
+
+        self.training_total_features = (self.training_total_features - self.training_mean) / self.training_std
+        self.validation_total_features = (self.validation_total_features - self.training_mean) / self.training_std
         return data_list
 
 
