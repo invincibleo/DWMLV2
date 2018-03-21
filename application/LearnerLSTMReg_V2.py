@@ -36,6 +36,7 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = SoundNet()
+            model.add(Flatten())
             # model.add(LSTM(512, batch_input_shape=(self.FLAGS.train_batch_size, 1, 401), stateful=True,
             #                dropout=0.1))
             # model.add(Dense(512))
