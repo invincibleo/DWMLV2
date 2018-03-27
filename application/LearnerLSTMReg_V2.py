@@ -36,7 +36,7 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = Sequential()
-            model.add(LSTM(4096, batch_input_shape=(1, 100, 1024), stateful=False, dropout=0.3))
+            model.add(LSTM(4096, input_shape=(100, 1024), stateful=False, dropout=0.3))
             model.add(Dense(4096))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
