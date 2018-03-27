@@ -36,9 +36,11 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = Sequential()
-            model.add(LSTM(128, batch_input_shape=(1, 100, 1024), stateful=True))
+            model.add(LSTM(4096, batch_input_shape=(1, 100, 1024), stateful=False, dropout=0.3))
+            model.add(Dense(4096))
             model.add(BatchNormalization())
-            model.add(Dropout(0.5))
+            model.add(Activation('relu'))
+            model.add(Dropout(0.3))
             model.add(Dense(2, activation='linear'))
 
             if continue_training:
@@ -66,30 +68,23 @@ class LearnerLSTMReg(Learner):
                                                                      patience=10,
                                                                      epsilon=0.0005)
             def schedule(epoch):
-                initial_lrate = 0.01
-                drop = 0.5
-                epochs_drop = 50.0
-                lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
+                if epoch <= 20:
+                    lrate = 0.001
+                else:
+                    lrate = 0.0001
                 print("Epoch: " + str(epoch + 1) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
 
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             model.summary()
-            for i in range(200):
-                lr = schedule(i)
-                model.compile(loss='mean_squared_error',
-                              optimizer=keras.optimizers.Adam(lr=lr,
-                                                              beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
-                              metrics=[CCC, 'mae'])
-                hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
-                                 batch_size=self.FLAGS.train_batch_size,
-                                 epochs=1,
-                                 verbose=1,
-                                 callbacks=[tensorboard],
-                                 validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
-                                 shuffle=False)
-                model.reset_states()
+            hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
+                             batch_size=self.FLAGS.train_batch_size,
+                             epochs=200,
+                             verbose=1,
+                             callbacks=[tensorboard, learning_rate_schedule],
+                             validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
+                             shuffle=True)
 
             # save the model and training history
             self.save_model(hist, model)
