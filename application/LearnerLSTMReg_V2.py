@@ -36,13 +36,15 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = SoundNet()
-            model.add(Flatten())
-            # model.add(LSTM(512, batch_input_shape=(self.FLAGS.train_batch_size, 1, 401), stateful=True,
-            #                dropout=0.1))
-            # model.add(Dense(512))
-            # model.add(BatchNormalization())
-            # model.add(Activation('relu'))
-            # model.add(Dropout(0.1))
+            # model.add(Reshape())
+            model.add(LSTM(4096,
+                           # batch_input_shape=(self.FLAGS.train_batch_size, 1, 401),
+                           stateful=True,
+                           dropout=0.5))
+            model.add(Dense(4096))
+            model.add(BatchNormalization())
+            model.add(Activation('relu'))
+            model.add(Dropout(0.5))
             # model.add(Dense(256))
             # model.add(BatchNormalization())
             # model.add(Activation('relu'))
@@ -63,7 +65,7 @@ class LearnerLSTMReg(Learner):
                 shutil.rmtree('tmp/logs/tensorboard/' + str(self.hash_name_hashed))
             tensorboard = keras.callbacks.TensorBoard(
                 log_dir='tmp/logs/tensorboard/' + str(self.hash_name_hashed),
-                histogram_freq=0, write_grads=True, write_graph=False, write_images=False, batch_size=self.FLAGS.train_batch_size)
+                histogram_freq=100, write_grads=True, write_graph=False, write_images=False, batch_size=self.FLAGS.train_batch_size)
             model_check_point = keras.callbacks.ModelCheckpoint(
                 filepath='tmp/model/' + str(self.hash_name_hashed) + '/checkpoints/' + 'weights.{epoch:02d}-{val_loss:.2f}.hdf5',
                 save_best_only=True,
