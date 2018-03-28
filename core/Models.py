@@ -244,27 +244,27 @@ def SoundNet():
 
     filter_parameters = [{'name': 'conv1', 'num_filters': 16, 'padding': 32,
                           'kernel_size': 64, 'conv_strides': 2,
-                          'pool_size': 2, 'pool_strides': 8, 'freeze': True},
+                          'pool_size': 2, 'pool_strides': 8, 'trainable': False},
 
                          {'name': 'conv2', 'num_filters': 32, 'padding': 16,
                           'kernel_size': 32, 'conv_strides': 2,
-                          'pool_size': 2, 'pool_strides': 8, 'freeze': True},
+                          'pool_size': 2, 'pool_strides': 8, 'trainable': False},
 
                          {'name': 'conv3', 'num_filters': 64, 'padding': 8,
-                          'kernel_size': 16, 'conv_strides': 2, 'freeze': True},
+                          'kernel_size': 16, 'conv_strides': 2, 'trainable': False},
 
                          {'name': 'conv4', 'num_filters': 128, 'padding': 4,
-                          'kernel_size': 8, 'conv_strides': 2, 'freeze': True},
+                          'kernel_size': 8, 'conv_strides': 2, 'trainable': False},
 
                          {'name': 'conv5', 'num_filters': 256, 'padding': 2,
                           'kernel_size': 4, 'conv_strides': 2,
-                          'pool_size': 1, 'pool_strides': 4, 'freeze': True},
+                          'pool_size': 1, 'pool_strides': 4, 'trainable': False},
 
                          {'name': 'conv6', 'num_filters': 512, 'padding': 2,
-                          'kernel_size': 4, 'conv_strides': 2, 'freeze': True},
+                          'kernel_size': 4, 'conv_strides': 2, 'trainable': False},
 
                          {'name': 'conv7', 'num_filters': 1024, 'padding': 2,
-                          'kernel_size': 4, 'conv_strides': 2, 'freeze': True},
+                          'kernel_size': 4, 'conv_strides': 2, 'trainable': False},
 
                          # {'name': 'conv8_2', 'num_filters': 401, 'padding': 0,
                          #  'kernel_size': 8, 'conv_strides': 2},
@@ -275,7 +275,7 @@ def SoundNet():
         model.add(Conv1D(x['num_filters'],
                          kernel_size=x['kernel_size'],
                          strides=x['conv_strides'],
-                         padding='valid', trainable=x['freeze']))
+                         padding='valid', trainable=x['trainable']))
         weights = model_weights[x['name']]['weights'].reshape(model.layers[-1].get_weights()[0].shape)
         biases = model_weights[x['name']]['biases']
 
