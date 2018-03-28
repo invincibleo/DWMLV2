@@ -67,7 +67,7 @@ class LearnerLSTMReg(Learner):
             model.add(Dense(4096))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
-            model.add(Dropout(0.2))
+            model.add(Dropout(0.5))
             # model.add(LSTM(512, batch_input_shape=(self.FLAGS.train_batch_size, 1, 401), stateful=True,
             #                dropout=0.1))
             # model.add(Dense(512))
@@ -104,9 +104,9 @@ class LearnerLSTMReg(Learner):
                                                                      patience=10,
                                                                      epsilon=0.0005)
             def schedule(epoch):
-                if epoch < 25:
+                if epoch < 15:
                     return 0.01
-                elif 25 <= epoch <= 50:
+                elif 15 <= epoch <= 50:
                     return 0.001
                 else:
                     return 0.0001
@@ -118,7 +118,7 @@ class LearnerLSTMReg(Learner):
             model.summary()
             hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
                              batch_size=self.FLAGS.train_batch_size,
-                             epochs=100,
+                             epochs=150,
                              verbose=1,
                              callbacks=[tensorboard, learning_rate_schedule],
                              validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
