@@ -37,7 +37,11 @@ class LearnerLSTMReg(Learner):
             # expected input data shape: (batch_size, timesteps, data_dim)
 
             model = SoundNet()
-            model.add(LSTM(128, stateful=True, dropout=0.2))
+            model.add(LSTM(4096, stateful=True, dropout=0.5))
+            model.add(Dense(4096))
+            model.add(BatchNormalization())
+            model.add(Activation('relu'))
+            model.add(Dropout(0.5))
             model.add(Dense(2, activation='linear', activity_regularizer=l2(0.0001)))
 
             if continue_training:
@@ -45,8 +49,7 @@ class LearnerLSTMReg(Learner):
 
             # Compile model
             model.compile(loss='mean_squared_error',
-                          optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate,
-                                                          beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
+                          optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate),
                           metrics=[CCC, 'mae'])
 
             # callbacks
@@ -65,9 +68,11 @@ class LearnerLSTMReg(Learner):
                                                                      patience=10,
                                                                      epsilon=0.0005)
             def schedule(epoch):
-                if epoch < 100:
+                if epoch <= 15:
+                    lrate = 0.01
+                elif 15 < epoch <= 50:
                     lrate = 0.001
-                elif epoch > 100 and epoch < 450:
+                elif 50 < epoch <= 150:
                     lrate = 0.0001
                 else:
                     lrate = 0.00005
@@ -83,11 +88,10 @@ class LearnerLSTMReg(Learner):
                                                                     batch_size=self.FLAGS.validation_batch_size,
                                                                     input_shape=self.input_shape)
             model.summary()
-            for i in range(500):
+            for i in range(200):
                 lr = schedule(i)
                 model.compile(loss='mean_squared_error',
-                              optimizer=keras.optimizers.Adam(lr=lr,
-                                                              beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
+                              optimizer=keras.optimizers.Adam(lr=lr),
                               metrics=[CCC, 'mae'])
                 hist = model.fit_generator(training_generator,
                                            steps_per_epoch=9*74,
