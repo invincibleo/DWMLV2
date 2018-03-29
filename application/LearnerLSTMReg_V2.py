@@ -37,19 +37,19 @@ class LearnerLSTMReg(Learner):
 
             model = SoundNet()
             # model.add(Reshape())
-            model.add(LSTM(4096,
+            model.add(LSTM(8192,
                            # batch_input_shape=(self.FLAGS.train_batch_size, 1, 401),
                            stateful=True,
-                           dropout=0.5))
+                           dropout=0.2))
             model.add(Dense(4096))
             model.add(BatchNormalization())
             model.add(Activation('relu'))
-            model.add(Dropout(0.5))
+            model.add(Dropout(0.2))
             # model.add(Dense(256))
             # model.add(BatchNormalization())
             # model.add(Activation('relu'))
             # model.add(Dropout(0.1))
-            model.add(Dense(2, activation='linear', activity_regularizer=keras.regularizers.l2(0.0001)))
+            model.add(Dense(2, activation='linear'))
 
             if continue_training:
                 model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")  # load weights into new model
@@ -76,19 +76,21 @@ class LearnerLSTMReg(Learner):
                                                                      patience=10,
                                                                      epsilon=0.0005)
             def schedule(epoch):
-                if epoch < 30:
+                if epoch <= 30:
                     return 0.01
-                elif 30 <= epoch <= 200:
+                elif 30 < epoch <= 200:
                     return 0.001
-                else:
+                elif 200 < epoch <= 300:
                     return 0.0001
+                else:
+                    return 0.00001
                 print("Epoch: " + str(epoch + 1) + " Learning rate: " + str(lrate) + "\n")
                 return lrate
 
             learning_rate_schedule = keras.callbacks.LearningRateScheduler(schedule=schedule)
 
             model.summary()
-            for i in range(500):
+            for i in range(350):
                 lr = schedule(i)
                 model.compile(loss='mean_squared_error',
                               optimizer=keras.optimizers.Adam(lr=lr,
