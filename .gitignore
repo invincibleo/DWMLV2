@@ -1,6 +1,4 @@
 *.pyc
-*.xml
-*.iml
-*.npy
-test/tmp/
-*.yml
+venv/
+test/
+.idea/
