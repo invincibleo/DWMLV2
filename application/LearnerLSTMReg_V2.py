@@ -23,6 +23,7 @@ from keras.layers import Input, LSTM, Lambda
 from core.Models import *
 from core.Learner import Learner
 from core.Metrics import *
+from core.evaluation import *
 
 
 # def get_dataset(num):
@@ -71,17 +72,21 @@ class LearnerLSTMReg(Learner):
             # model = LSTM_MIMO(num_t_x=num_t_x, num_input_dims=88, num_states=64, batch_size=self.FLAGS.train_batch_size)
 
             model = SoundNet()
-            model.add(LSTM(64))
-            model.add(Dense(2, activation='tanh'))
+            model.add(Flatten())
+            model.add(Dense(1024, kernel_regularizer=keras.regularizers.l2(0.01)))
+            model.add(BatchNormalization())
+            model.add(Activation(activation='relu'))
+            model.add(Dropout(0.8))
+            model.add(Dense(6, activation='softmax'))
 
             if continue_training:
                 model.load_weights("tmp/model/" + self.hash_name_hashed + "/model.h5")  # load weights into new model
 
             # Compile model
-            model.compile(loss='mean_squared_error',
+            model.compile(loss='categorical_crossentropy',
                           optimizer=keras.optimizers.Adam(lr=self.FLAGS.learning_rate,
                                                           beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0),
-                          metrics=[CCC, 'mse'])
+                          metrics=['categorical_accuracy', top3_accuracy])
 
             # callbacks
             if tf.gfile.Exists('tmp/logs/tensorboard/' + str(self.hash_name_hashed)):
@@ -144,12 +149,13 @@ class LearnerLSTMReg(Learner):
             #                  callbacks=[tensorboard, learning_rate_schedule],
             #                  validation_data=(a11, b11),
             #                  shuffle=True)
-            hist = model.fit(self.dataset.training_total_features, self.dataset.training_total_labels,
+            hist = model.fit(self.dataset.data_list['training'],
+                             self.dataset.data_list['tr_l'],
                              batch_size=self.FLAGS.train_batch_size,
-                             epochs=150,
+                             epochs=100,
                              verbose=1,
                              callbacks=[tensorboard, learning_rate_schedule],
-                             validation_data=(self.dataset.validation_total_features, self.dataset.validation_total_labels),
+                             validation_data=(self.dataset.data_list['validation'], self.dataset.data_list['v_l']),
                              shuffle=True)
 
             # save the model and training history
@@ -181,14 +187,17 @@ class LearnerLSTMReg(Learner):
         #     predictions = model.predict_on_batch(X)
         #     Y_all.append(Y)
         #     predictions_all.append(predictions)
-        predictions_all = model.predict(self.dataset.validation_total_features, batch_size=256, verbose=0)
+        predictions_all = model.predict(self.dataset.data_list['training'], batch_size=256, verbose=0)
         # predictions_all = model.predict(a11, batch_size=256, verbose=0)
         # predictions_all_all = predictions_all * b_std + b_mean
         # plt.plot(predictions_all_all)
 
-        Y_all = self.dataset.validation_total_labels
+        Y_all = self.dataset.data_list['tr_l']
 
-        Y_all = np.reshape(Y_all, (-1, np.shape(Y_all)[-1]))
-        predictions_all = np.reshape(predictions_all, (-1, np.shape(predictions_all)[-1]))
+        Y_all = np.reshape(Y_all, (-1, 6))
+        predictions_all = np.reshape(predictions_all, (-1, 6))
+
+        # Y_all = Y_all.tolist()
+        # predictions_all = predictions_all.tolist()
 
         return Y_all, predictions_all

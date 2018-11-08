@@ -75,12 +75,12 @@ class Learner(object):
     def save_model(self, hist, model):
         model_json_file_addr, model_h5_file_addr = self.generate_pathes()
 
-        # Saving the objects:
-        with open('tmp/model/objs.txt', 'wb') as histFile:  # Python 3: open(..., 'wb')
-            # pickle.dump([hist, model], f)
-            for key, value in hist.history.iteritems():
-                histFile.write(key + '-' + ','.join([str(x) for x in value]))
-                histFile.write('\n')
+        # # Saving the objects:
+        # with open('tmp/model/objs.txt', 'wb') as histFile:  # Python 3: open(..., 'wb')
+        #     # pickle.dump([hist, model], f)
+        #     for key, value in hist.history.iteritems():
+        #         histFile.write(key + '-' + ','.join([str(x) for x in value]))
+        #         histFile.write('\n')
 
         # serialize model to JSON
         model_json = model.to_json()

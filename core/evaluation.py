@@ -1134,17 +1134,17 @@ def main(argv):
     ]
     dcase2013metric = DCASE2013_EventDetection_Metrics(class_list=class_list)
 
-    print 'DCASE2013'
-    print 'Frame-based:', dcase2013metric.frame_based(system_output=system_output,
-                                                      annotated_ground_truth=annotated_groundtruth)
-    print 'Event-based:', dcase2013metric.event_based(system_output=system_output,
-                                                      annotated_ground_truth=annotated_groundtruth)
-    print 'Class-based:', dcase2013metric.class_based(system_output=system_output,
-                                                      annotated_ground_truth=annotated_groundtruth)
+    print('DCASE2013')
+    print('Frame-based:', dcase2013metric.frame_based(system_output=system_output,
+                                                      annotated_ground_truth=annotated_groundtruth))
+    print('Event-based:', dcase2013metric.event_based(system_output=system_output,
+                                                      annotated_ground_truth=annotated_groundtruth))
+    print('Class-based:', dcase2013metric.class_based(system_output=system_output,
+                                                      annotated_ground_truth=annotated_groundtruth))
 
     dcase2016_metric = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=class_list)
-    print 'DCASE2016'
-    print dcase2016_metric.evaluate(system_output=system_output, annotated_ground_truth=annotated_groundtruth).results()
+    print('DCASE2016')
+    print(dcase2016_metric.evaluate(system_output=system_output, annotated_ground_truth=annotated_groundtruth).results())
 
 
 if __name__ == "__main__":

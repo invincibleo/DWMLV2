@@ -238,7 +238,7 @@ def SoundNet():
     pool size divided by 2
     :return:
     """
-    model_weights = np.load('sound8.npy').item()
+    model_weights = np.load('sound8.npy', encoding='latin1').item()
     model = Sequential()
     model.add(InputLayer(input_shape=(1764, 1)))
 
@@ -260,11 +260,11 @@ def SoundNet():
                           'kernel_size': 4, 'conv_strides': 2,
                           'pool_size': 1, 'pool_strides': 4},
 
-                         {'name': 'conv6', 'num_filters': 512, 'padding': 2,
-                          'kernel_size': 4, 'conv_strides': 2},
-
-                         {'name': 'conv7', 'num_filters': 1024, 'padding': 2,
-                          'kernel_size': 4, 'conv_strides': 2},
+                         # {'name': 'conv6', 'num_filters': 512, 'padding': 2,
+                         #  'kernel_size': 4, 'conv_strides': 2},
+                         #
+                         # {'name': 'conv7', 'num_filters': 1024, 'padding': 2,
+                         #  'kernel_size': 4, 'conv_strides': 2},
 
                          # {'name': 'conv8_2', 'num_filters': 401, 'padding': 0,
                          #  'kernel_size': 8, 'conv_strides': 2},

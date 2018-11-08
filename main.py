@@ -8,27 +8,53 @@
 
 import argparse
 import sys
+import json
+import datetime
+import keras as K
+from application.Dataset_DCASE2017_Task3 import *
+from application.LearnerLSTMReg_V2 import *
 
-from application.Youtube8MDataset import *
-from core import *
-from core.util import *
-from application.LearnerLastLayerMLP import LearnerLastLayerMLP
-from application.LearnerInceptionV3 import LearnerInceptionV3
-from application.PreprocessingInceptionV3 import PreprocessingInceptionV3
-from application.PreprocessingMelFreq import PreprocessingMelFreq
-from application.DCASE2017Task3Dataset import DCASE2017Task3Dataset
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.2
+# config.gpu_options.allow_growth = True
+set_session(tf.Session(config=config))
 
 def main(_):
-    # dataset = Youtube8MDataset('/media/invincibleo/Windows/Users/u0093839/Leo/Audioset', 10, 10, ['wav', 'mp3'])
-    # dataset_preprocessing = PreprocessingInceptionV3(FLAGS, dataset).get_out_dataset()
-    dataset = DCASE2017Task3Dataset(
-        dataset_dir='/media/invincibleo/Windows/Users/u0093839/Box Sync/PhD/Experiment/SoundEventRecognition/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development',
-        testing_percentage=20, validation_percentage=20, extensions=['wav', 'mp3'])
-    dataset_khot = dataset.one_hot_encoding()
-    aa = LearnerInceptionV3('LearnerInceptionV3', dataset_khot, FLAGS)
-    # aa.learn()
-    aa.predict()
-    print('a')
+    dataset = Dataset_DCASE2017_Task3(dataset_dir=FLAGS.data_dir,
+                                normalization=False,
+                                using_existing_features=False,
+                                dimension="25, 1024",
+                                flag=FLAGS)
+    K.clear_session()
+    learner = LearnerLSTMReg(dataset=dataset,
+                             learner_name='LSTMReg',
+                             flag=FLAGS)
+
+    learner.learn()
+    truth, prediction = learner.predict()
+
+    evaluator = DCASE2016_EventDetection_SegmentBasedMetrics(class_list=dataset.label_list, time_resolution=FLAGS.time_resolution)
+
+    evaluator.evaluate(truth, prediction)
+    results = evaluator.results()
+
+    print(results)
+    # results_dir_addr = 'tmp/results/'
+    # current_time_str = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    # if not tf.gfile.Exists(results_dir_addr):
+    #     tf.gfile.MakeDirs(results_dir_addr)
+    # hash_FLAGS = hashlib.sha1(str(FLAGS)).hexdigest()
+    # results_file_dir = os.path.join(results_dir_addr, dataset.dataset_name, hash_FLAGS)
+    # if not tf.gfile.Exists(results_file_dir):
+    #     tf.gfile.MakeDirs(results_file_dir)
+    #     json.dump(results, open(results_file_dir + '/results_' + current_time_str + '.json', 'wb'), indent=4)
+    #     json.dump(zip(truth[:, 0].tolist(), prediction[:, 0].tolist()),
+    #               open(results_file_dir + '/results_' + current_time_str + '_0.json', 'a'), indent=4)
+    #     json.dump(zip(truth[:, 1].tolist(), prediction[:, 1].tolist()),
+    #               open(results_file_dir + '/results_' + current_time_str + '_1.json', 'a'), indent=4)
+    #     with open(results_file_dir + 'FLAGS_' + current_time_str + '.txt', 'wb') as f:
+    #         f.write(str(FLAGS))
 
 
 if __name__ == '__main__':
@@ -36,37 +62,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--data_dir',
         type=str,
-        default='',
+        default='/media/dtang/A080894A8089283C/Users/dtang/Box Sync/PhD/Experiment/Datasets/DCASE2017-baseline-system-master/applications/data/TUT-sound-events-2017-development',
         help='Path to folders of labeled audios.'
-    )
-    parser.add_argument(
-        '--output_graph',
-        type=str,
-        default='tmp/output_graph.pb',
-        help='Where to save the trained graph.'
-    )
-    parser.add_argument(
-        '--output_labels',
-        type=str,
-        default='tmp/output_labels.txt',
-        help='Where to save the trained graph\'s labels.'
-    )
-    parser.add_argument(
-        '--summaries_dir',
-        type=str,
-        default='tmp/retrain_logs',
-        help='Where to save summary logs for TensorBoard.'
-    )
-    parser.add_argument(
-        '--how_many_training_steps',
-        type=int,
-        default=4000,
-        help='How many training steps to run before ending.'
     )
     parser.add_argument(
         '--learning_rate',
         type=float,
-        default=0.01,
+        default=0.001,
         help='How large a learning rate to use when training.'
     )
     parser.add_argument(
@@ -82,21 +84,15 @@ if __name__ == '__main__':
         help='What percentage of images to use as a validation set.'
     )
     parser.add_argument(
-        '--eval_step_interval',
-        type=int,
-        default=10,
-        help='How often to evaluate the training results.'
-    )
-    parser.add_argument(
         '--train_batch_size',
         type=int,
-        default=100,
+        default=1024,
         help='How many images to train on at a time.'
     )
     parser.add_argument(
         '--test_batch_size',
         type=int,
-        default=-1,
+        default=5,
         help="""\
         How many images to test on. This test set is only used once, to evaluate
         the final accuracy of the model after training completes.
@@ -107,7 +103,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--validation_batch_size',
         type=int,
-        default=100,
+        default=2,
         help="""\
         How many images to use in an evaluation batch. This validation set is
         used much more often than the test set, and is an early indicator of how
@@ -118,70 +114,90 @@ if __name__ == '__main__':
         """
     )
     parser.add_argument(
-        '--print_misclassified_test_images',
-        default=False,
+        '--time_resolution',
+        type=float,
+        default=0.04,
         help="""\
-        Whether to print out a list of all misclassified test images.\
-        """,
-        action='store_true'
-    )
-    parser.add_argument(
-        '--model_dir',
-        type=str,
-        default='tmp/imagenet',
-        help="""\
-        Path to classify_image_graph_def.pb,
-        imagenet_synset_to_human_label_map.txt, and
-        imagenet_2012_challenge_label_map_proto.pbtxt.\
+        The hop of the FFT in sec.\
         """
     )
     parser.add_argument(
-        '--bottleneck_dir',
-        type=str,
-        default='tmp/bottleneck',
-        help='Path to cache bottleneck layer values as files.'
-    )
-    parser.add_argument(
-        '--final_tensor_name',
-        type=str,
-        default='final_result',
-        help="""\
-        The name of the output classification layer in the retrained graph.\
-        """
-    )
-    parser.add_argument(
-        '--flip_left_right',
-        default=False,
-        help="""\
-        Whether to randomly flip half of the training images horizontally.\
-        """,
-        action='store_true'
-    )
-    parser.add_argument(
-        '--random_crop',
+        '--fs',
         type=int,
-        default=0,
+        default=22000,
         help="""\
-        A percentage determining how much of a margin to randomly crop off the
-        training images.\
+        The sampling frequency if an time-series signal is given\
         """
     )
     parser.add_argument(
-        '--random_scale',
-        type=int,
-        default=0,
+        '--drop_out_rate',
+        type=float,
+        default=0.5,
         help="""\
-        A percentage determining how much to randomly scale up the size of the
-        training images by.\
+        \
         """
     )
     parser.add_argument(
-        '--random_brightness',
-        type=int,
-        default=0,
+        '--coding',
+        type=str,
+        default='khot',
         help="""\
-        A percentage determining how much to randomly multiply the training image
-        input pixels up or down by.\
+        one hot encoding: onehot, k hot encoding: khot, continues value: number
+        \
+        """
+    )
+    parser.add_argument(
+        '--parameter_dir',
+        type=str,
+        default="test/parameters",
+        help="""\
+        parameter folder
+        \
+        """
+    )
+    parser.add_argument(
+        '--dimension',
+        type=str,
+        default="25, 1024",
+        help="""\
+        input dimension to the model
+        \
+        """
+    )
+    parser.add_argument(
+        '--output_activation',
+        type=str,
+        default="sigmoid",
+        help="""\
+        output activation function, e.g. sigmoid, tanh, linear
+        \
+        """
+    )
+    parser.add_argument(
+        '--regularization_constant',
+        type=float,
+        default=0.0001,
+        help="""\
+        l2 regularizer weight
+        \
+        """
+    )
+    parser.add_argument(
+        '--epochs',
+        type=int,
+        default=200,
+        help="""\
+        number of epochs
+        \
+        """
+    )
+    parser.add_argument(
+        '--learning_rate_decay',
+        type=bool,
+        default=True,
+        help="""\
+        if learning rate decay
+        \
         """
     )
     FLAGS, unparsed = parser.parse_known_args()

@@ -2,3 +2,6 @@
 venv/
 test/
 .idea/
+logs/
+tmp/
+sound8.npy
